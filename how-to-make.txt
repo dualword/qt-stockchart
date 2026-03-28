@@ -1,0 +1,24 @@
+cd build/
+# Get path to QT
+brew --prefix qt
+
+# Make the make file
+cmake .. -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt
+
+# Determine how many cores available for thread building
+sysctl -n hw.logicalcpu
+
+# Make the app
+make -j10
+
+# Run the app
+./StockChart
+
+# Test Stock api
+curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -H "Accept: application/json" "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=3mo"
+
+
+
+brew info qt
+brew upgrade
+
