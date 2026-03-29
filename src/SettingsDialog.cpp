@@ -12,6 +12,7 @@ static QString signupUrl(const QString &id)
     if (id == "alphavantage") return "https://www.alphavantage.co/support/#api-key";
     if (id == "finnhub")      return "https://finnhub.io/register";
     if (id == "polygon")      return "https://polygon.io/dashboard/signup";
+    if (id == "twelvedata")      return "https://twelvedata.com/";
     return {};
 }
 
