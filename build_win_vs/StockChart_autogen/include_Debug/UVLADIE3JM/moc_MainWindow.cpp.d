@@ -238,6 +238,7 @@ C:/opt/projects/qt-projects/qt-stockchart/build_win_vs/StockChart_autogen/includ
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtNetwork/qtnetworkglobal.h \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/QBoxLayout \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/QButtonGroup \
+  C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/QComboBox \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/QFrame \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/QGraphicsView \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/QGraphicsWidget \
@@ -256,6 +257,7 @@ C:/opt/projects/qt-projects/qt-stockchart/build_win_vs/StockChart_autogen/includ
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/qabstractspinbox.h \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/qboxlayout.h \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/qbuttongroup.h \
+  C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/qcombobox.h \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/qframe.h \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/qgraphicsitem.h \
   C:/opt/dev/qt/6.7.0/msvc2019_64/include/QtWidgets/qgraphicslayoutitem.h \

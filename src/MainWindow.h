@@ -17,6 +17,7 @@
 #include <QMap>
 #include <QSet>
 #include <QIcon>
+#include <QComboBox> 
 #include "StockDataProvider.h"
 
 class QGraphicsLineItem;
@@ -43,6 +44,7 @@ private slots:
     void showHelp();
     void exportGroups();
     void importGroups();
+    void onYScaleChanged(int index);  
 
 private:
     void setupUI();
@@ -86,6 +88,8 @@ private:
     static QIcon makeErrorIcon();
     void refreshAllStockCacheVisuals();
 
+    QStringList getSelectedSymbols() const;
+
     // ── Widgets ──────────────────────────────────────────────────────────────
     QSplitter      *m_splitter;          // horizontal: left | right
     QTreeWidget    *m_stockTree;
@@ -127,4 +131,7 @@ private:
     qint64 m_clickedMsecs = -1;
     QDate  m_clickedDate;
     int    m_refColIndex  = 0;
+
+    QComboBox* m_yScaleCombo; // New UI element
+    const QString kAppVersion = "1.1.0";
 };

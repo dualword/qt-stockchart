@@ -89,7 +89,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupUI()
 {
-    setWindowTitle("Stock Chart");
+    setWindowTitle(QString("StockChart v%1").arg(kAppVersion));
     resize(1200, 720);
 
     QWidget *central = new QWidget(this);
@@ -138,6 +138,7 @@ void MainWindow::setupUI()
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(0);
     setupRightPanel(rightPanel, rightLayout);
+    m_yScaleCombo->setCurrentIndex(2); // Default to +/- 20%
 
     m_splitter->addWidget(leftPanel);
     m_splitter->addWidget(rightPanel);
@@ -227,6 +228,22 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     connect(m_chartRangeBtnGroup, &QButtonGroup::idClicked,
             this, &MainWindow::onChartRangeChanged);
 
+    // Requirement 4: Add Y-Axis Scale Selector
+    m_yScaleCombo = new QComboBox(this);
+    m_yScaleCombo->addItems({ "Auto", "+/- 30%", "+/- 20%", "+/- 10%" });
+    connect(m_yScaleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        this, &MainWindow::onYScaleChanged);
+
+    // Insert into your top layout (assuming it's after the period buttons)
+    // Find where chartRangeBtnGroup is added and add m_yScaleCombo to that layout
+    tbLayout->addSpacing(10);
+    tbLayout->addWidget(new QLabel("Y:"));
+    tbLayout->addWidget(m_yScaleCombo);
+
+    // Requirement 5: Default Startup
+    // Set 60 Days (Assuming 60 is index 2 or similar in your group)
+    m_chartRangeBtnGroup->button(60)->setChecked(true);
+
     tbLayout->addStretch();
 
     // Help button — far right
@@ -250,6 +267,23 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     m_vertSplitter->setChildrenCollapsible(true);
 
     m_chart = new QChart();
+
+    // Requirement 2: Legend at Top with minimal padding
+    m_chart->legend()->setAlignment(Qt::AlignTop);
+    m_chart->legend()->setContentsMargins(0, 0, 0, 0);
+    m_chart->setMargins(QMargins(10, 10, 10, 10));
+
+    // Requirement 3: Light Grey Background Gradient for Margins
+    QLinearGradient gradient(0, 0, 0, 400);
+    gradient.setColorAt(0.0, QColor(240, 240, 240));
+    gradient.setColorAt(1.0, QColor(210, 210, 210));
+    m_chart->setBackgroundBrush(gradient);
+
+    // Keep Plot Area "As Is" (White)
+    m_chart->setPlotAreaBackgroundVisible(true);
+    m_chart->setPlotAreaBackgroundBrush(Qt::white);
+
+
     m_chart->setAnimationOptions(QChart::SeriesAnimations);
     m_chart->setMargins(QMargins(4, 4, 4, 4));
     m_chart->legend()->setAlignment(Qt::AlignBottom);
@@ -268,6 +302,10 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     m_stockTable->hide(); // start collapsed
     connect(m_stockTable->horizontalHeader(), &QHeaderView::sectionClicked,
             this, &MainWindow::onTableColumnClicked);
+
+    m_zeroLine = new QGraphicsLineItem(m_chart);
+    QPen zeroPen(Qt::darkGray, 1, Qt::DashLine);
+    m_zeroLine->setPen(zeroPen);
 
     m_vertSplitter->addWidget(m_chartView);
     m_vertSplitter->addWidget(m_stockTable);
@@ -549,35 +587,29 @@ void MainWindow::onChartClicked(const QPointF &chartPos)
 
 void MainWindow::updateZeroLine()
 {
+    if (!m_zeroLine || !m_chart || !m_chartView) 
+        return;
+
+    // Get the vertical axis
     const auto vertAxes = m_chart->axes(Qt::Vertical);
-    const auto horizAxes = m_chart->axes(Qt::Horizontal);
-    if (vertAxes.isEmpty() || horizAxes.isEmpty() || m_chart->series().isEmpty()) {
-        if (m_zeroLine) m_zeroLine->setVisible(false);
+    if (vertAxes.isEmpty())
+        return;
+    auto* axisY = qobject_cast<QValueAxis*>(vertAxes.first());
+    if (!axisY) return;
+
+    // Check if 0 is actually within the current visible range
+    if (0 < axisY->min() || 0 > axisY->max()) {
+        m_zeroLine->setVisible(false);
         return;
     }
 
-    auto *axisY = qobject_cast<QValueAxis*>(vertAxes.first());
-    if (!axisY || axisY->min() > 0.0 || axisY->max() < 0.0) {
-        if (m_zeroLine) m_zeroLine->setVisible(false);
-        return;
-    }
+    // Map the value '0' to a pixel point in the chart's plot area
+    QPointF zeroPoint = m_chart->mapToPosition(QPointF(0, 0));
+    QRectF plotRect = m_chart->plotArea();
 
-    if (!m_zeroLine) {
-        m_zeroLine = new QGraphicsLineItem(m_chart);
-        QPen pen(QColor(90, 90, 90, 210));
-        pen.setWidthF(1.2);
-        m_zeroLine->setPen(pen);
-        m_zeroLine->setZValue(8); // above fill areas, below crosshair
-    }
-
-    auto *axisX = qobject_cast<QDateTimeAxis*>(horizAxes.first());
-    const double midMsecs = axisX
-        ? (axisX->min().toMSecsSinceEpoch() + axisX->max().toMSecsSinceEpoch()) / 2.0
-        : 0.0;
-
-    const QRectF  plotArea = m_chart->plotArea();
-    const QPointF zeroPos  = m_chart->mapToPosition(QPointF(midMsecs, 0.0));
-    m_zeroLine->setLine(plotArea.left(), zeroPos.y(), plotArea.right(), zeroPos.y());
+    // Set the line to span the entire width of the plot area at the 'zero' height
+    m_zeroLine->setLine(plotRect.left(), zeroPoint.y(), plotRect.right(), zeroPoint.y());
+    m_zeroLine->setZValue(1); // Ensure it's above the grid but potentially below series
     m_zeroLine->setVisible(true);
 }
 
@@ -866,7 +898,7 @@ void MainWindow::setActiveProvider(const QString &id)
     StockDataProvider *p = activeProvider();
     if (!p) return;
 
-    setWindowTitle("Stock Chart — " + p->displayName());
+	setWindowTitle("StockChart v" + kAppVersion + " — " + p->displayName());
 
     if (!p->hasCredentials())
         m_statusLabel->setText(p->displayName() + ": API key not set. Use Providers > Configure API Keys...");
@@ -986,6 +1018,23 @@ void MainWindow::onError(const QString &symbol, const QString &message)
         m_symbolErrors.insert(symbol);
         updateTreeItemIcon(symbol);
     }
+}
+
+void MainWindow::onYScaleChanged(int index) {
+    updateChart(getSelectedSymbols()); // Trigger redraw
+}
+
+QStringList MainWindow::getSelectedSymbols() const
+{
+    QStringList symbols;
+    QList<QTreeWidgetItem*> selectedItems = m_stockTree->selectedItems();
+    for (QTreeWidgetItem* item : selectedItems) {
+        // Only add if it's a child node (a symbol), not a group header
+        if (item->parent()) {
+            symbols << item->text(0);
+        }
+    }
+    return symbols;
 }
 
 void MainWindow::updateChart(const QStringList &selectedSymbols)
@@ -1129,6 +1178,40 @@ void MainWindow::updateChart(const QStringList &selectedSymbols)
     axisY->setMax(maxPct + pad);
     m_chart->legend()->setVisible(true);
     updateCrosshair();
+
+    // Calculate Min/Max for Auto or Fixed Percent
+    double globalMin = std::numeric_limits<double>::max();
+    double globalMax = -std::numeric_limits<double>::max();
+
+    // ... (logic to iterate data points to find actual min/max)
+
+     axisY = qobject_cast<QValueAxis*>(m_chart->axes(Qt::Vertical).first());
+    if (axisY) {
+        int scaleIdx = m_yScaleCombo->currentIndex();
+        if (scaleIdx == 0) { // Auto
+            axisY->setRange(globalMin * 0.99, globalMax * 1.01);
+        }
+        else {
+            // Requirement 4: Fixed % Scaling
+            double percent = 0.0;
+            if (scaleIdx == 1) 
+                percent = 0.30;      // +/- 30%
+            else if (scaleIdx == 2) 
+                percent = 0.20;     // +/- 20%
+            else if (scaleIdx == 3) 
+                percent = 0.10;     // +/- 10%
+
+
+            // Scale relative to the 0 line or the mid-point of the data
+            // double mid = (m_showPercentChange) ? 0.0 : (globalMax + globalMin) / 2.0;
+            double mid = 0.0;
+            double range = percent * 100.0;
+
+            axisY->setRange(mid - range, mid + range);
+            updateZeroLine();
+        }
+    }
+
     isUpdating = false;
 }
 

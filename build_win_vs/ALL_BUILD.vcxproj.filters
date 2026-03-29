@@ -4,6 +4,5 @@
     <CustomBuild Include="C:\opt\projects\qt-projects\qt-stockchart\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\MainWindow.cpp" />
   </ItemGroup>
 </Project>
