@@ -40,7 +40,7 @@ option(BUILD_AS_BUNDLE "Build as a macOS App Bundle" ON)
 # Determine executable type based on Platform
 # MACOSX_BUNDLE creates the .app folder structure macdeployqt needs.
 # WIN32 prevents a command prompt from appearing behind the GUI on Windows.
-if(APPLE)
+if(APPLE AND BUILD_AS_BUNDLE)
     add_executable(StockChart MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 elseif(WIN32)
     add_executable(StockChart WIN32 ${SOURCES} ${HEADERS})
@@ -63,4 +63,9 @@ target_link_libraries(StockChart PRIVATE
     Qt6::Widgets
     Qt6::Charts
     Qt6::Network
+)
+
+qt_add_resources(StockChart "app_resources"
+    PREFIX "/"
+    FILES bg_graph.jpg
 )

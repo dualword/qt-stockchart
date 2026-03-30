@@ -130,6 +130,19 @@ StockChart/fast:
 .PHONY : StockChart/fast
 
 #=============================================================================
+# Target rules for targets named StockChart_other_files
+
+# Build rule for target.
+StockChart_other_files: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 StockChart_other_files
+.PHONY : StockChart_other_files
+
+# fast build rule for target.
+StockChart_other_files/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/StockChart_other_files.dir/build.make CMakeFiles/StockChart_other_files.dir/build
+.PHONY : StockChart_other_files/fast
+
+#=============================================================================
 # Target rules for targets named StockChart_autogen_timestamp_deps
 
 # Build rule for target.
@@ -178,6 +191,30 @@ StockChart_autogen/mocs_compilation.s: StockChart_autogen/mocs_compilation.cpp.s
 StockChart_autogen/mocs_compilation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/StockChart.dir/build.make CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.s
 .PHONY : StockChart_autogen/mocs_compilation.cpp.s
+
+build_exe/.qt/rcc/qrc_app_resources.o: build_exe/.qt/rcc/qrc_app_resources.cpp.o
+.PHONY : build_exe/.qt/rcc/qrc_app_resources.o
+
+# target to build an object file
+build_exe/.qt/rcc/qrc_app_resources.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/StockChart.dir/build.make CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o
+.PHONY : build_exe/.qt/rcc/qrc_app_resources.cpp.o
+
+build_exe/.qt/rcc/qrc_app_resources.i: build_exe/.qt/rcc/qrc_app_resources.cpp.i
+.PHONY : build_exe/.qt/rcc/qrc_app_resources.i
+
+# target to preprocess a source file
+build_exe/.qt/rcc/qrc_app_resources.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/StockChart.dir/build.make CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.i
+.PHONY : build_exe/.qt/rcc/qrc_app_resources.cpp.i
+
+build_exe/.qt/rcc/qrc_app_resources.s: build_exe/.qt/rcc/qrc_app_resources.cpp.s
+.PHONY : build_exe/.qt/rcc/qrc_app_resources.s
+
+# target to generate assembly for a file
+build_exe/.qt/rcc/qrc_app_resources.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/StockChart.dir/build.make CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.s
+.PHONY : build_exe/.qt/rcc/qrc_app_resources.cpp.s
 
 src/AlphaVantageProvider.o: src/AlphaVantageProvider.cpp.o
 .PHONY : src/AlphaVantageProvider.o
@@ -381,10 +418,14 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... StockChart_autogen"
 	@echo "... StockChart_autogen_timestamp_deps"
+	@echo "... StockChart_other_files"
 	@echo "... StockChart"
 	@echo "... StockChart_autogen/mocs_compilation.o"
 	@echo "... StockChart_autogen/mocs_compilation.i"
 	@echo "... StockChart_autogen/mocs_compilation.s"
+	@echo "... build_exe/.qt/rcc/qrc_app_resources.o"
+	@echo "... build_exe/.qt/rcc/qrc_app_resources.i"
+	@echo "... build_exe/.qt/rcc/qrc_app_resources.s"
 	@echo "... src/AlphaVantageProvider.o"
 	@echo "... src/AlphaVantageProvider.i"
 	@echo "... src/AlphaVantageProvider.s"

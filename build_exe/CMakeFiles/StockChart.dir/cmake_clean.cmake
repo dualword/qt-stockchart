@@ -1,9 +1,12 @@
 file(REMOVE_RECURSE
+  ".qt/rcc/qrc_app_resources.cpp"
   "CMakeFiles/StockChart_autogen.dir/AutogenUsed.txt"
   "CMakeFiles/StockChart_autogen.dir/ParseCache.txt"
   "StockChart_autogen"
   "CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o"
   "CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o.d"
+  "CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o"
+  "CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o.d"
   "CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o"
   "CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o.d"
   "CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o"

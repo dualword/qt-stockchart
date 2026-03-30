@@ -69,10 +69,16 @@ include CMakeFiles/StockChart.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/StockChart.dir/flags.make
 
+.qt/rcc/qrc_app_resources.cpp: /Users/dennislang/opt/projects/qt-projects/stocks/bg_graph.jpg
+.qt/rcc/qrc_app_resources.cpp: .qt/rcc/app_resources.qrc
+.qt/rcc/qrc_app_resources.cpp: /opt/homebrew/opt/qt/share/qt/libexec/rcc
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Running rcc for resource app_resources"
+	/opt/homebrew/opt/qt/share/qt/libexec/rcc --output /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/.qt/rcc/qrc_app_resources.cpp --name app_resources /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/.qt/rcc/app_resources.qrc
+
 StockChart_autogen/timestamp: /opt/homebrew/opt/qt/share/qt/libexec/moc
 StockChart_autogen/timestamp: /opt/homebrew/opt/qt/share/qt/libexec/uic
 StockChart_autogen/timestamp: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Automatic MOC and UIC for target StockChart"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Automatic MOC and UIC for target StockChart"
 	/opt/homebrew/bin/cmake -E cmake_autogen /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles/StockChart_autogen.dir/AutogenInfo.json ""
 	/opt/homebrew/bin/cmake -E touch /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/StockChart_autogen/timestamp
 
@@ -82,7 +88,7 @@ CMakeFiles/StockChart.dir/codegen:
 CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o: StockChart_autogen/mocs_compilation.cpp
 CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o -MF CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/StockChart_autogen/mocs_compilation.cpp
 
 CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.i: cmake_force
@@ -96,7 +102,7 @@ CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/main.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/main.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/main.cpp
 CMakeFiles/StockChart.dir/src/main.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/StockChart.dir/src/main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/StockChart.dir/src/main.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/main.cpp.o -MF CMakeFiles/StockChart.dir/src/main.cpp.o.d -o CMakeFiles/StockChart.dir/src/main.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/main.cpp
 
 CMakeFiles/StockChart.dir/src/main.cpp.i: cmake_force
@@ -110,7 +116,7 @@ CMakeFiles/StockChart.dir/src/main.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/MainWindow.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/MainWindow.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/MainWindow.cpp
 CMakeFiles/StockChart.dir/src/MainWindow.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/StockChart.dir/src/MainWindow.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/StockChart.dir/src/MainWindow.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/MainWindow.cpp.o -MF CMakeFiles/StockChart.dir/src/MainWindow.cpp.o.d -o CMakeFiles/StockChart.dir/src/MainWindow.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/MainWindow.cpp
 
 CMakeFiles/StockChart.dir/src/MainWindow.cpp.i: cmake_force
@@ -124,7 +130,7 @@ CMakeFiles/StockChart.dir/src/MainWindow.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/SettingsDialog.cpp
 CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o -MF CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o.d -o CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/SettingsDialog.cpp
 
 CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.i: cmake_force
@@ -138,7 +144,7 @@ CMakeFiles/StockChart.dir/src/SettingsDialog.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/StockDataProvider.cpp
 CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o -MF CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o.d -o CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/StockDataProvider.cpp
 
 CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.i: cmake_force
@@ -152,7 +158,7 @@ CMakeFiles/StockChart.dir/src/StockDataProvider.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/AlphaVantageProvider.cpp
 CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o -MF CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o.d -o CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/AlphaVantageProvider.cpp
 
 CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.i: cmake_force
@@ -166,7 +172,7 @@ CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/FinnhubProvider.cpp
 CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o -MF CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o.d -o CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/FinnhubProvider.cpp
 
 CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.i: cmake_force
@@ -180,7 +186,7 @@ CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/PolygonProvider.cpp
 CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o -MF CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o.d -o CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/PolygonProvider.cpp
 
 CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.i: cmake_force
@@ -194,7 +200,7 @@ CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.s: cmake_force
 CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o: CMakeFiles/StockChart.dir/flags.make
 CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o: /Users/dennislang/opt/projects/qt-projects/stocks/src/TwelveDataProvider.cpp
 CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o -MF CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o.d -o CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/src/TwelveDataProvider.cpp
 
 CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.i: cmake_force
@@ -204,6 +210,20 @@ CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.i: cmake_force
 CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/dennislang/opt/projects/qt-projects/stocks/src/TwelveDataProvider.cpp -o CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.s
+
+CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o: CMakeFiles/StockChart.dir/flags.make
+CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o: .qt/rcc/qrc_app_resources.cpp
+CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o: CMakeFiles/StockChart.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o -MF CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o.d -o CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o -c /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/.qt/rcc/qrc_app_resources.cpp
+
+CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/.qt/rcc/qrc_app_resources.cpp > CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.i
+
+CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/.qt/rcc/qrc_app_resources.cpp -o CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.s
 
 # Object files for target StockChart
 StockChart_OBJECTS = \
@@ -215,7 +235,8 @@ StockChart_OBJECTS = \
 "CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o" \
 "CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o" \
 "CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o" \
-"CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o"
+"CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o" \
+"CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o"
 
 # External object files for target StockChart
 StockChart_EXTERNAL_OBJECTS =
@@ -229,6 +250,7 @@ StockChart: CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o
 StockChart: CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o
 StockChart: CMakeFiles/StockChart.dir/src/PolygonProvider.cpp.o
 StockChart: CMakeFiles/StockChart.dir/src/TwelveDataProvider.cpp.o
+StockChart: CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o
 StockChart: CMakeFiles/StockChart.dir/build.make
 StockChart: /opt/homebrew/opt/qt/lib/QtCharts.framework/Versions/A/QtCharts
 StockChart: /opt/homebrew/opt/qt/lib/QtNetwork.framework/Versions/A/QtNetwork
@@ -238,7 +260,7 @@ StockChart: /opt/homebrew/opt/qt/lib/QtOpenGL.framework/Versions/A/QtOpenGL
 StockChart: /opt/homebrew/opt/qt/lib/QtGui.framework/Versions/A/QtGui
 StockChart: /opt/homebrew/opt/qt/lib/QtCore.framework/Versions/A/QtCore
 StockChart: CMakeFiles/StockChart.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable StockChart"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Linking CXX executable StockChart"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/StockChart.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -249,6 +271,7 @@ CMakeFiles/StockChart.dir/clean:
 	$(CMAKE_COMMAND) -P CMakeFiles/StockChart.dir/cmake_clean.cmake
 .PHONY : CMakeFiles/StockChart.dir/clean
 
+CMakeFiles/StockChart.dir/depend: .qt/rcc/qrc_app_resources.cpp
 CMakeFiles/StockChart.dir/depend: StockChart_autogen/timestamp
 	cd /Users/dennislang/opt/projects/qt-projects/stocks/build_exe && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/dennislang/opt/projects/qt-projects/stocks /Users/dennislang/opt/projects/qt-projects/stocks /Users/dennislang/opt/projects/qt-projects/stocks/build_exe /Users/dennislang/opt/projects/qt-projects/stocks/build_exe /Users/dennislang/opt/projects/qt-projects/stocks/build_exe/CMakeFiles/StockChart.dir/DependInfo.cmake "--color=$(COLOR)" StockChart
 .PHONY : CMakeFiles/StockChart.dir/depend

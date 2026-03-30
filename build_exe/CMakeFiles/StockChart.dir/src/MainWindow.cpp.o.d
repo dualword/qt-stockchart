@@ -1188,6 +1188,7 @@ CMakeFiles/StockChart.dir/src/MainWindow.cpp.o: \
   /opt/homebrew/opt/qt/lib/QtWidgets.framework/Headers/qheaderview.h \
   /opt/homebrew/opt/qt/lib/QtCore.framework/Headers/QModelIndex \
   /opt/homebrew/opt/qt/lib/QtWidgets.framework/Headers/QGraphicsLineItem \
+  /opt/homebrew/opt/qt/lib/QtWidgets.framework/Headers/QGraphicsPixmapItem \
   /opt/homebrew/opt/qt/lib/QtGui.framework/Headers/QMouseEvent \
   /opt/homebrew/opt/qt/lib/QtGui.framework/Headers/QCloseEvent \
   /opt/homebrew/opt/qt/lib/QtWidgets.framework/Headers/QFileDialog \

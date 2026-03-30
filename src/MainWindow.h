@@ -21,6 +21,7 @@
 #include "StockDataProvider.h"
 
 class QGraphicsLineItem;
+class QGraphicsPixmapItem;
 class QCloseEvent;
 
 class MainWindow : public QMainWindow
@@ -43,7 +44,7 @@ private slots:
     void openSettings();
     void onAddGroupClicked();
     void onTreeContextMenu(const QPoint &pos);
-    void onTableStateChanged(int id);
+    void onToggleTable();
     void onToggleDisplayMode(bool checked);
     void configurePeriods();
     void onTableColumnClicked(int col);
@@ -60,7 +61,7 @@ private:
     void setupMenu();
     void setupRightPanel(QWidget *parent, QBoxLayout *layout);
     void updateChart(const QStringList &selectedSymbols);
-    void setTableState(int stateId);     // 0=Collapsed 1=Half 2=Full
+    void setTableExpanded(bool expanded);
     void refreshTable();
     void loadTableSettings();
     void saveTableSettings();
@@ -77,6 +78,7 @@ private:
     void onChartClicked(const QPointF &chartPos);
     void updateCrosshair();
     void updateZeroLine();
+    void updateBgImage();
 
     // Group management
     QTreeWidgetItem *addGroup(const QString &name, bool expanded = true);
@@ -110,15 +112,18 @@ private:
     QChartView     *m_chartView;
     QChart         *m_chart;
     QTableWidget   *m_stockTable;
-    QButtonGroup   *m_tableStateBtnGroup;
+    QToolButton    *m_tableToggleBtn;
     QButtonGroup   *m_chartRangeBtnGroup;
     QPushButton    *m_displayModeBtn;
     QLabel         *m_statusLabel;
     QActionGroup   *m_providerActionGroup;
-    QMap<QString, QLabel*> m_providerNameLabels;
-    QMap<QString, QLabel*> m_callCountLabels;
-    QGraphicsLineItem *m_crosshairLine = nullptr;
-    QGraphicsLineItem *m_zeroLine      = nullptr;
+    QMap<QString, QLabel*>  m_providerNameLabels;
+    QMap<QString, QLabel*>  m_callCountLabels;
+    QMap<QString, QWidget*> m_providerRowWidgets;
+    QGraphicsLineItem   *m_crosshairLine  = nullptr;
+    QGraphicsLineItem   *m_zeroLine       = nullptr;
+    QGraphicsPixmapItem *m_bgImageItem    = nullptr;
+    QPixmap              m_bgPixmap;
 
     // ── State ─────────────────────────────────────────────────────────────────
     QList<StockDataProvider*> m_providers;
@@ -127,8 +132,9 @@ private:
     QMap<QString, int> m_dailyCallCounts;
     QDate m_currentDay;
 
-    // Table state (0=Collapsed, 1=Half, 2=Full)
-    int         m_tableStateId       = 0;
+    // Table state
+    bool        m_tableExpanded      = false;
+    int         m_savedTableHeight   = -1;
     bool        m_showPercentChange  = false;
     QList<int>  m_periods;
 

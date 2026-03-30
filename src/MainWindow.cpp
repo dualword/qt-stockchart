@@ -30,6 +30,7 @@
 #include <QModelIndex>
 #include <QDate>
 #include <QGraphicsLineItem>
+#include <QGraphicsPixmapItem>
 #include <QMouseEvent>
 #include <QCloseEvent>
 #include <QPen>
@@ -40,6 +41,7 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QStyle>
+#include <QStyleFactory>
 #include <QApplication>
 #include <QAreaSeries>
 #include <QLegendMarker>
@@ -116,6 +118,11 @@ void MainWindow::setupUI()
 
     // Six-column tree
     m_stockTree = new QTreeWidget(leftPanel);
+#ifdef Q_OS_MACOS
+    // QMacStyle suppresses column-0 icons on child rows when parent rows use setItemWidget.
+    // Fusion style renders icons correctly on all platforms.
+    m_stockTree->setStyle(QStyleFactory::create("Fusion"));
+#endif
     m_stockTree->setColumnCount(6);
     m_stockTree->setHeaderLabels({"*", "Type", "Symbol", "Price", "Pur. $", "Pur. Date"});
     m_stockTree->setHeaderHidden(false);
@@ -175,23 +182,12 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     tbLayout->setContentsMargins(6, 2, 6, 2);
     tbLayout->setSpacing(4);
 
-    // State button group: Collapse | Half | Full
-    m_tableStateBtnGroup = new QButtonGroup(this);
-    m_tableStateBtnGroup->setExclusive(true);
-
-    const QStringList stateLabels = { "▲ Collapse", "⊡ Half", "▼ Full" };
-    for (int i = 0; i < 3; ++i) {
-        auto *btn = new QToolButton(toolbar);
-        btn->setText(stateLabels[i]);
-        btn->setCheckable(true);
-        btn->setAutoRaise(true);
-        m_tableStateBtnGroup->addButton(btn, i);
-        tbLayout->addWidget(btn);
-    }
-    m_tableStateBtnGroup->button(0)->setChecked(true); // Collapsed default
-
-    connect(m_tableStateBtnGroup, &QButtonGroup::idClicked,
-            this, &MainWindow::onTableStateChanged);
+    // Single table toggle button
+    m_tableToggleBtn = new QToolButton(toolbar);
+    m_tableToggleBtn->setText("▼ Table");
+    m_tableToggleBtn->setAutoRaise(true);
+    connect(m_tableToggleBtn, &QToolButton::clicked, this, &MainWindow::onToggleTable);
+    tbLayout->addWidget(m_tableToggleBtn);
 
     // Separator
     auto *sep = new QFrame(toolbar);
@@ -319,8 +315,28 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     QPen zeroPen(Qt::darkGray, 1, Qt::DashLine);
     m_zeroLine->setPen(zeroPen);
 
+    // Background image shown when no chart data is active
+    m_bgPixmap = QPixmap(":/bg_graph.jpg");
+    if (!m_bgPixmap.isNull()) {
+        m_bgImageItem = new QGraphicsPixmapItem(m_chart);
+        m_bgImageItem->setZValue(0);
+        m_bgImageItem->setVisible(true); // visible until first data arrives
+        connect(m_chart, &QChart::plotAreaChanged, this, &MainWindow::updateBgImage);
+    }
+
     m_vertSplitter->addWidget(m_chartView);
     m_vertSplitter->addWidget(m_stockTable);
+
+    // Save table height when user drags the splitter (not fired on programmatic setSizes)
+    connect(m_vertSplitter, &QSplitter::splitterMoved, this, [this](int, int) {
+        if (m_tableExpanded) {
+            const QList<int> sizes = m_vertSplitter->sizes();
+            if (sizes.size() >= 2 && sizes[1] > 0) {
+                m_savedTableHeight = sizes[1];
+                saveTableSettings();
+            }
+        }
+    });
 
     layout->addWidget(m_vertSplitter, 1);
 }
@@ -355,36 +371,27 @@ void MainWindow::setupMenu()
 
 // ── Table state ───────────────────────────────────────────────────────────────
 
-void MainWindow::onTableStateChanged(int id)
+void MainWindow::onToggleTable()
 {
-    setTableState(id);
+    setTableExpanded(!m_tableExpanded);
 }
 
-void MainWindow::setTableState(int stateId)
+void MainWindow::setTableExpanded(bool expanded)
 {
-    m_tableStateId = stateId;
-    m_tableStateBtnGroup->button(stateId)->setChecked(true);
-
-    switch (stateId) {
-    case 0: // Collapsed
+    m_tableExpanded = expanded;
+    if (!expanded) {
         m_stockTable->hide();
         m_chartView->show();
-        break;
-    case 1: { // Half
+        m_tableToggleBtn->setText("▼ Table");
+    } else {
         m_chartView->show();
         m_stockTable->show();
-        const int h = m_vertSplitter->height();
-        m_vertSplitter->setSizes({ h / 2, h / 2 });
+        const int total = m_vertSplitter->height();
+        const int tableH = (m_savedTableHeight > 0) ? m_savedTableHeight : total / 2;
+        m_vertSplitter->setSizes({ total - tableH, tableH });
+        m_tableToggleBtn->setText("▲ Table");
         refreshTable();
-        break;
     }
-    case 2: // Full
-        m_chartView->hide();
-        m_stockTable->show();
-        refreshTable();
-        break;
-    }
-
     saveTableSettings();
 }
 
@@ -400,7 +407,7 @@ void MainWindow::onToggleDisplayMode(bool checked)
 
 void MainWindow::refreshTable()
 {
-    if (m_tableStateId == 0) return; // collapsed — skip
+    if (!m_tableExpanded) return; // collapsed — skip
 
     const QStringList syms     = selectedSymbols();
     const QDate       today    = QDate::currentDate();
@@ -558,12 +565,25 @@ void MainWindow::configurePeriods()
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
-    if (obj == m_chartView->viewport() && event->type() == QEvent::MouseButtonPress) {
+    if (event->type() == QEvent::MouseButtonPress) {
         auto *me = static_cast<QMouseEvent*>(event);
         if (me->button() == Qt::LeftButton) {
-            QPointF scenePos = m_chartView->mapToScene(me->pos());
-            QPointF chartPos = m_chart->mapFromScene(scenePos);
-            onChartClicked(chartPos);
+            // Provider row clicks
+            for (StockDataProvider *p : m_providers) {
+                if (m_providerRowWidgets.value(p->id()) == obj) {
+                    if (p->hasCredentials())
+                        setActiveProvider(p->id());
+                    else
+                        openSettings();
+                    return true;
+                }
+            }
+            // Chart crosshair
+            if (obj == m_chartView->viewport()) {
+                QPointF scenePos = m_chartView->mapToScene(me->pos());
+                QPointF chartPos = m_chart->mapFromScene(scenePos);
+                onChartClicked(chartPos);
+            }
         }
     }
     return QMainWindow::eventFilter(obj, event);
@@ -623,6 +643,16 @@ void MainWindow::updateZeroLine()
     m_zeroLine->setLine(plotRect.left(), zeroPoint.y(), plotRect.right(), zeroPoint.y());
     m_zeroLine->setZValue(1); // Ensure it's above the grid but potentially below series
     m_zeroLine->setVisible(true);
+}
+
+void MainWindow::updateBgImage()
+{
+    if (!m_bgImageItem || !m_bgImageItem->isVisible()) return;
+    const QRectF plot = m_chart->plotArea();
+    if (plot.isEmpty()) return;
+    m_bgImageItem->setPixmap(
+        m_bgPixmap.scaled(plot.size().toSize(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    m_bgImageItem->setPos(plot.topLeft());
 }
 
 void MainWindow::updateCrosshair()
@@ -960,9 +990,9 @@ void MainWindow::loadTableSettings()
     m_displayModeBtn->setChecked(m_showPercentChange);
     m_displayModeBtn->setText(m_showPercentChange ? "% Change" : "Price");
 
-    // Table state — apply after widget is shown
-    int stateId = s.value("tableState", 0).toInt();
-    setTableState(stateId);
+    m_savedTableHeight = s.value("tableHeight", -1).toInt();
+    bool expanded = s.value("tableExpanded", false).toBool();
+    setTableExpanded(expanded);
 }
 
 void MainWindow::saveTableSettings()
@@ -972,7 +1002,8 @@ void MainWindow::saveTableSettings()
     for (int p : m_periods) vl << p;
     s.setValue("tablePeriods",    vl);
     s.setValue("tableShowPercent", m_showPercentChange);
-    s.setValue("tableState",      m_tableStateId);
+    s.setValue("tableExpanded",   m_tableExpanded);
+    s.setValue("tableHeight",     m_savedTableHeight);
 }
 
 // ── Provider management ───────────────────────────────────────────────────────
@@ -1040,6 +1071,7 @@ void MainWindow::onStockSelectionChanged()
         for (QAbstractAxis *ax : m_chart->axes()) m_chart->removeAxis(ax);
         m_stockTable->setRowCount(0);
         m_statusLabel->setText("No stocks selected.");
+        if (m_bgImageItem) { m_bgImageItem->setVisible(true); updateBgImage(); }
         return;
     }
 
@@ -1128,10 +1160,13 @@ void MainWindow::updateChart(const QStringList &selectedSymbols)
         if (m_cache.contains(sym) && !m_cache[sym].isEmpty()) ready << sym;
 
     if (ready.isEmpty()) {
+        if (m_bgImageItem) { m_bgImageItem->setVisible(true); updateBgImage(); }
         updateCrosshair();
         isUpdating = false;
         return;
     }
+
+    if (m_bgImageItem) m_bgImageItem->setVisible(false);
     
     // Before adding new series
     for (auto* axis : m_chart->axes()) {
@@ -1347,27 +1382,36 @@ void MainWindow::setupApiInfoPanel(QWidget *parent, QBoxLayout *layout)
     sep->setFrameShadow(QFrame::Sunken);
     vl->addWidget(sep);
 
-    auto *grid = new QGridLayout;
-    grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(2);
-    grid->setColumnStretch(0, 1);
-
     QFont sf;
     sf.setPointSize(sf.pointSize() - 1);
 
-    for (int i = 0; i < m_providers.size(); ++i) {
-        StockDataProvider *p = m_providers[i];
-        auto *nameLabel  = new QLabel(p->displayName(), panel);
+    for (StockDataProvider *p : m_providers) {
+        auto *row = new QFrame(panel);
+        row->setCursor(Qt::PointingHandCursor);
+        row->installEventFilter(this);
+
+        auto *hl = new QHBoxLayout(row);
+        hl->setContentsMargins(2, 1, 2, 1);
+        hl->setSpacing(4);
+
+        auto *nameLabel  = new QLabel(p->displayName(), row);
         nameLabel->setFont(sf);
-        auto *countLabel = new QLabel("0", panel);
+        nameLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
+        auto *countLabel = new QLabel("0", row);
         countLabel->setFont(sf);
         countLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        grid->addWidget(nameLabel,  i, 0);
-        grid->addWidget(countLabel, i, 1);
+        countLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
+        hl->addWidget(nameLabel);
+        hl->addStretch();
+        hl->addWidget(countLabel);
+
+        vl->addWidget(row);
         m_providerNameLabels[p->id()]  = nameLabel;
         m_callCountLabels[p->id()]     = countLabel;
+        m_providerRowWidgets[p->id()]  = row;
     }
-    vl->addLayout(grid);
 
     layout->addWidget(panel);
 }
@@ -1380,12 +1424,18 @@ void MainWindow::updateApiInfoPanel()
     normalFont.setPointSize(normalFont.pointSize() - 1);
 
     for (StockDataProvider *p : m_providers) {
-        const bool active = (p->id() == m_activeProviderId);
+        const bool active     = (p->id() == m_activeProviderId);
+        const bool configured = p->hasCredentials();
         if (auto *nl = m_providerNameLabels.value(p->id()))
             nl->setFont(active ? boldFont : normalFont);
         if (auto *cl = m_callCountLabels.value(p->id())) {
             cl->setFont(active ? boldFont : normalFont);
             cl->setText(QString::number(m_dailyCallCounts.value(p->id(), 0)));
+        }
+        if (auto *row = m_providerRowWidgets.value(p->id())) {
+            row->setStyleSheet(configured
+                ? ""
+                : "QFrame { background-color: rgba(200, 60, 60, 0.12); border-radius: 3px; }");
         }
     }
 }
@@ -1466,11 +1516,11 @@ QIcon MainWindow::makeErrorIcon()
 
 QIcon MainWindow::makeStarIcon(int index)
 {
-    if (index <= 0) return QIcon();
+    QPixmap pm(24, 16);
+    pm.fill(Qt::transparent);
+    if (index <= 0) return QIcon(pm); // transparent placeholder — ensures macOS allocates icon space in col 0
     static const QColor colors[] = { Qt::transparent, QColor("#FFD700"), QColor("#448AFF"),
                                      QColor("#4CAF50"), QColor("#F44336"), QColor("#9C27B0") };
-    QPixmap pm(24, 16); // Wider pixmap for centering/padding
-    pm.fill(Qt::transparent);
     QPainter p(&pm);
     p.setRenderHint(QPainter::Antialiasing);
     p.setBrush(colors[index % 6]);

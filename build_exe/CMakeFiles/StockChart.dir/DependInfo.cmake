@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "" "StockChart_autogen/timestamp" "custom" "StockChart_autogen/deps"
   "/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/StockChart_autogen/mocs_compilation.cpp" "CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/StockChart.dir/StockChart_autogen/mocs_compilation.cpp.o.d"
+  "/Users/dennislang/opt/projects/qt-projects/stocks/build_exe/.qt/rcc/qrc_app_resources.cpp" "CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o" "gcc" "CMakeFiles/StockChart.dir/build_exe/.qt/rcc/qrc_app_resources.cpp.o.d"
   "/Users/dennislang/opt/projects/qt-projects/stocks/src/AlphaVantageProvider.cpp" "CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o" "gcc" "CMakeFiles/StockChart.dir/src/AlphaVantageProvider.cpp.o.d"
   "/Users/dennislang/opt/projects/qt-projects/stocks/src/FinnhubProvider.cpp" "CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o" "gcc" "CMakeFiles/StockChart.dir/src/FinnhubProvider.cpp.o.d"
   "/Users/dennislang/opt/projects/qt-projects/stocks/src/MainWindow.cpp" "CMakeFiles/StockChart.dir/src/MainWindow.cpp.o" "gcc" "CMakeFiles/StockChart.dir/src/MainWindow.cpp.o.d"

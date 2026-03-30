@@ -58,8 +58,7 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         "onTreeContextMenu",
         "QPoint",
         "pos",
-        "onTableStateChanged",
-        "id",
+        "onToggleTable",
         "onToggleDisplayMode",
         "checked",
         "configurePeriods",
@@ -102,41 +101,39 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         QtMocHelpers::SlotData<void(const QPoint &)>(14, 2, QMC::AccessPrivate, QMetaType::Void, {{
             { 0x80000000 | 15, 16 },
         }}),
-        // Slot 'onTableStateChanged'
-        QtMocHelpers::SlotData<void(int)>(17, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Int, 18 },
-        }}),
+        // Slot 'onToggleTable'
+        QtMocHelpers::SlotData<void()>(17, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'onToggleDisplayMode'
-        QtMocHelpers::SlotData<void(bool)>(19, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Bool, 20 },
+        QtMocHelpers::SlotData<void(bool)>(18, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Bool, 19 },
         }}),
         // Slot 'configurePeriods'
-        QtMocHelpers::SlotData<void()>(21, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(20, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'onTableColumnClicked'
-        QtMocHelpers::SlotData<void(int)>(22, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Int, 23 },
+        QtMocHelpers::SlotData<void(int)>(21, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Int, 22 },
         }}),
         // Slot 'onChartRangeChanged'
-        QtMocHelpers::SlotData<void(int)>(24, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Int, 25 },
+        QtMocHelpers::SlotData<void(int)>(23, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Int, 24 },
         }}),
         // Slot 'showHelp'
-        QtMocHelpers::SlotData<void()>(26, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(25, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'exportGroups'
-        QtMocHelpers::SlotData<void()>(27, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(26, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'importGroups'
-        QtMocHelpers::SlotData<void()>(28, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(27, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'onYScaleChanged'
-        QtMocHelpers::SlotData<void(int)>(29, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Int, 30 },
+        QtMocHelpers::SlotData<void(int)>(28, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Int, 29 },
         }}),
         // Slot 'onEditStockDetails'
-        QtMocHelpers::SlotData<void(QTreeWidgetItem *)>(31, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { 0x80000000 | 32, 33 },
+        QtMocHelpers::SlotData<void(QTreeWidgetItem *)>(30, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { 0x80000000 | 31, 32 },
         }}),
         // Slot 'onSetStar'
-        QtMocHelpers::SlotData<void(QTreeWidgetItem *, int)>(34, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { 0x80000000 | 32, 33 }, { QMetaType::Int, 35 },
+        QtMocHelpers::SlotData<void(QTreeWidgetItem *, int)>(33, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { 0x80000000 | 31, 32 }, { QMetaType::Int, 34 },
         }}),
     };
     QtMocHelpers::UintData qt_properties {
@@ -168,7 +165,7 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 4: _t->openSettings(); break;
         case 5: _t->onAddGroupClicked(); break;
         case 6: _t->onTreeContextMenu((*reinterpret_cast<std::add_pointer_t<QPoint>>(_a[1]))); break;
-        case 7: _t->onTableStateChanged((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
+        case 7: _t->onToggleTable(); break;
         case 8: _t->onToggleDisplayMode((*reinterpret_cast<std::add_pointer_t<bool>>(_a[1]))); break;
         case 9: _t->configurePeriods(); break;
         case 10: _t->onTableColumnClicked((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;

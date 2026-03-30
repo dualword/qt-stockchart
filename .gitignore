@@ -1,6 +1,7 @@
 # C++ objects and libs
 *.slo
 *.lo
+*.d
 *.o
 *.a
 *.la
