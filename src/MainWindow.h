@@ -21,12 +21,19 @@
 #include "StockDataProvider.h"
 
 class QGraphicsLineItem;
+class QCloseEvent;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+
+    enum TreeRoles {
+        StarRole = Qt::UserRole + 10,
+        PurPriceRole,
+        PurDateRole
+    };
 
 private slots:
     void onStockSelectionChanged();
@@ -45,6 +52,8 @@ private slots:
     void exportGroups();
     void importGroups();
     void onYScaleChanged(int index);  
+    void onEditStockDetails(QTreeWidgetItem *item);
+    void onSetStar(QTreeWidgetItem *item, int starIndex);
 
 private:
     void setupUI();
@@ -59,6 +68,7 @@ private:
     StockDataProvider *activeProvider() const;
     void loadSettings();
     void saveSettings();
+    void closeEvent(QCloseEvent *event) override;
     QStringList selectedSymbols() const;
 
     bool eventFilter(QObject *obj, QEvent *event) override;
@@ -68,11 +78,13 @@ private:
 
     // Group management
     QTreeWidgetItem *addGroup(const QString &name, bool expanded = true);
-    void addStockToGroup(QTreeWidgetItem *groupItem, const QString &symbol);
+    void addStockToGroup(QTreeWidgetItem *groupItem, const QString &symbol, 
+                         int star = 0, double purPrice = 0.0, const QString &purDate = "");
     void showAddStockDialog(QTreeWidgetItem *groupItem);
     void loadGroups();
     void saveGroups();
 
+    static QIcon makeStarIcon(int index);
     // API call tracking
     void setupApiInfoPanel(QWidget *parent, QBoxLayout *layout);
     void updateApiInfoPanel();
@@ -87,8 +99,6 @@ private:
     static QIcon makeTypeIcon(SymbolType type);
     static QIcon makeErrorIcon();
     void refreshAllStockCacheVisuals();
-
-    QStringList getSelectedSymbols() const;
 
     // ── Widgets ──────────────────────────────────────────────────────────────
     QSplitter      *m_splitter;          // horizontal: left | right

@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
+#include <QFormLayout>
 #include <QWidget>
 #include <QFrame>
 #include <QLabel>
@@ -25,9 +26,11 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QHeaderView>
+#include <QModelIndex>
 #include <QDate>
 #include <QGraphicsLineItem>
 #include <QMouseEvent>
+#include <QCloseEvent>
 #include <QPen>
 #include <QFileDialog>
 #include <QFile>
@@ -100,26 +103,34 @@ void MainWindow::setupUI()
     mainLayout->setSpacing(4);
 
     m_splitter = new QSplitter(Qt::Horizontal, central);
+    m_splitter->setHandleWidth(12); // Make the slider bar much wider
 
     // ── Left panel ───────────────────────────────────────────────────────────
     QWidget *leftPanel = new QWidget(m_splitter);
     leftPanel->setMinimumWidth(150);
-    leftPanel->setMaximumWidth(220);
 
     auto *leftLayout = new QVBoxLayout(leftPanel);
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(2);
 
-    // Two-column tree: symbol | latest price
+    // Six-column tree
     m_stockTree = new QTreeWidget(leftPanel);
-    m_stockTree->setColumnCount(2);
-    m_stockTree->setHeaderHidden(true);
+    m_stockTree->setColumnCount(6);
+    m_stockTree->setHeaderLabels({"*", "Type", "Symbol", "Price", "Pur. $", "Pur. Date"});
+    m_stockTree->setHeaderHidden(false);
     m_stockTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    m_stockTree->setIndentation(16);
+    m_stockTree->setIndentation(12); // Reduced to prevent icons from spilling into Col 1
     m_stockTree->setContextMenuPolicy(Qt::CustomContextMenu);
-    // Layout columns: name stretches, price sized to contents
-    m_stockTree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_stockTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    
+    // Fixed widths to reveal columns as dragged
+    m_stockTree->header()->setSectionResizeMode(QHeaderView::Fixed);
+    m_stockTree->header()->resizeSection(0, 32);  // Increased width to fit arrow + star
+    m_stockTree->header()->resizeSection(1, 24);  // Type
+    m_stockTree->header()->resizeSection(2, 80);  // Symbol
+    m_stockTree->header()->resizeSection(3, 70);  // Price
+    m_stockTree->header()->resizeSection(4, 70);  // Pur Price
+    m_stockTree->header()->resizeSection(5, 100); // Pur Date
+
     connect(m_stockTree, &QTreeWidget::itemSelectionChanged,
             this, &MainWindow::onStockSelectionChanged);
     connect(m_stockTree, &QTreeWidget::customContextMenuRequested,
@@ -654,9 +665,16 @@ void MainWindow::onChartRangeChanged(int days)
 
 QTreeWidgetItem *MainWindow::addGroup(const QString &name, bool expanded)
 {
+    // Truncate name to max 15 characters
+    QString displayName = name;
+    if (displayName.length() > 15) {
+        displayName = displayName.left(12) + "...";
+    }
+
     auto *item = new QTreeWidgetItem(m_stockTree);
     item->setFlags(Qt::ItemIsEnabled);
-    item->setData(0, Qt::UserRole, name);
+    item->setData(0, Qt::UserRole, name); // Store full name in data
+    m_stockTree->setFirstColumnSpanned(m_stockTree->indexOfTopLevelItem(item), QModelIndex(), true); // Let group row use full width
 
     auto *container = new QWidget;
     container->setStyleSheet("background: transparent;");
@@ -664,19 +682,21 @@ QTreeWidgetItem *MainWindow::addGroup(const QString &name, bool expanded)
     hl->setContentsMargins(0, 1, 4, 1);
     hl->setSpacing(2);
 
-    auto *nameLabel = new QLabel(name, container);
+    auto *nameLabel = new QLabel(displayName, container);
     QFont f = nameLabel->font();
     f.setBold(true);
     nameLabel->setFont(f);
-
+    
     auto *addBtn = new QPushButton("+", container);
     addBtn->setFixedSize(18, 18);
     addBtn->setFlat(true);
     addBtn->setCursor(Qt::PointingHandCursor);
     addBtn->setToolTip("Add stock to " + name);
 
-    hl->addWidget(nameLabel, 1);
+    hl->addWidget(nameLabel);
     hl->addWidget(addBtn);
+    hl->addStretch(); // Keep name and button to the left
+
     m_stockTree->setItemWidget(item, 0, container);
 
     connect(addBtn, &QPushButton::clicked, this, [this, item]() {
@@ -687,31 +707,39 @@ QTreeWidgetItem *MainWindow::addGroup(const QString &name, bool expanded)
     return item;
 }
 
-void MainWindow::addStockToGroup(QTreeWidgetItem *groupItem, const QString &symbol)
+/*
+    columns:
+        0: StarRole
+        1: Type icon
+        2: Symbol
+        3: Latest price (from cache, may be empty)
+        4: Purchase price (from data)
+        5: Purchase date (from data)
+*/
+void MainWindow::addStockToGroup(QTreeWidgetItem *groupItem, const QString &symbol, 
+                                 int star, double purPrice, const QString &purDate)
 {
-    // Two-column item: column 0 = symbol, column 1 = latest price (if cached)
     auto *item = new QTreeWidgetItem(groupItem);
-    item->setText(0, symbol);
-    item->setTextAlignment(0, Qt::AlignLeft | Qt::AlignVCenter);
-    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
-    item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-
-    // Set price and tint if cached
+    item->setData(0, StarRole, star);
+    item->setIcon(0, makeStarIcon(star));
+  
+    if (m_symbolErrors.contains(symbol))
+       item->setIcon(1, makeErrorIcon());
+    else if (m_symbolTypes.contains(symbol))
+       item->setIcon(1, makeTypeIcon(m_symbolTypes[symbol]));
+    item->setText(2, symbol);
     if (m_cache.contains(symbol) && !m_cache[symbol].isEmpty()) {
         const double latest = m_cache[symbol].last().price;
-        item->setText(1, QString("$%1").arg(latest, 0, 'f', 2));
-        const QColor cachedBg(230, 245, 230); // light green
-        item->setBackground(0, QBrush(cachedBg));
-        item->setBackground(1, QBrush(cachedBg));
-    } else {
-        item->setText(1, QString());
+        item->setText(3, QString("$%1").arg(latest, 0, 'f', 2));
     }
+    item->setData(4, PurPriceRole, purPrice);
+    if (purPrice > 0) item->setText(4, QString::number(purPrice, 'f', 2));
+    item->setData(5, PurDateRole, purDate);
+    item->setText(5, purDate);
 
-    // Apply cached icon immediately if available
-    if (m_symbolErrors.contains(symbol))
-        item->setIcon(0, makeErrorIcon());
-    else if (m_symbolTypes.contains(symbol))
-        item->setIcon(0, makeTypeIcon(m_symbolTypes[symbol]));
+    item->setTextAlignment(3, Qt::AlignRight | Qt::AlignVCenter);
+    item->setTextAlignment(4, Qt::AlignRight | Qt::AlignVCenter);
+    item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 }
 
 // ── Add stock dialog ──────────────────────────────────────────────────────────
@@ -748,7 +776,7 @@ void MainWindow::showAddStockDialog(QTreeWidgetItem *groupItem)
             if (sym.isEmpty()) continue;
             bool exists = false;
             for (int i = 0; i < groupItem->childCount(); ++i)
-                if (groupItem->child(i)->text(0) == sym) { exists = true; break; }
+                if (groupItem->child(i)->text(2) == sym) { exists = true; break; }
             if (exists) skipped << sym;
             else { addStockToGroup(groupItem, sym); added << sym; }
         }
@@ -801,6 +829,16 @@ void MainWindow::onTreeContextMenu(const QPoint &pos)
             saveGroups();
         });
     } else {
+        menu.addAction("Edit Details...", this, [this, item]() { onEditStockDetails(item); });
+        
+        QMenu *starMenu = menu.addMenu("Set Star");
+        const QStringList starNames = {"None", "Gold", "Blue", "Green", "Red", "Purple"};
+        for (int i = 0; i < starNames.size(); ++i) {
+            QAction *act = starMenu->addAction(makeStarIcon(i), starNames[i]);
+            connect(act, &QAction::triggered, this, [this, item, i]() { onSetStar(item, i); });
+        }
+
+        menu.addSeparator();
         menu.addAction("Remove Stock", this, [this, item]() {
             delete item;
             saveGroups();
@@ -808,6 +846,38 @@ void MainWindow::onTreeContextMenu(const QPoint &pos)
     }
 
     menu.exec(m_stockTree->viewport()->mapToGlobal(pos));
+}
+
+void MainWindow::onEditStockDetails(QTreeWidgetItem *item)
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle("Edit Details: " + item->text(2));
+    QFormLayout *form = new QFormLayout(&dlg);
+
+    QLineEdit *priceEdit = new QLineEdit(item->text(4), &dlg);
+    QLineEdit *dateEdit  = new QLineEdit(item->text(5), &dlg);
+    form->addRow("Purchase Price:", priceEdit);
+    form->addRow("Purchase Date:", dateEdit);
+
+    QDialogButtonBox *btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    form->addRow(btns);
+    connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    if (dlg.exec() == QDialog::Accepted) {
+        item->setText(4, priceEdit->text());
+        item->setText(5, dateEdit->text());
+        item->setData(4, PurPriceRole, priceEdit->text().toDouble());
+        item->setData(5, PurDateRole, dateEdit->text());
+        saveGroups();
+    }
+}
+
+void MainWindow::onSetStar(QTreeWidgetItem *item, int starIndex)
+{
+    item->setData(0, StarRole, starIndex);
+    item->setIcon(0, makeStarIcon(starIndex));
+    saveGroups();
 }
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -829,8 +899,17 @@ void MainWindow::loadGroups()
         s.setArrayIndex(i);
         QTreeWidgetItem *group = addGroup(s.value("name").toString(),
                                           s.value("expanded", true).toBool());
-        for (const QString &sym : s.value("stocks").toStringList())
-            addStockToGroup(group, sym);
+        
+        int stockCount = s.beginReadArray("stocks");
+        for (int j = 0; j < stockCount; ++j) {
+            s.setArrayIndex(j);
+            addStockToGroup(group, 
+                            s.value("sym").toString(),
+                            s.value("star").toInt(),
+                            s.value("purPrice").toDouble(),
+                            s.value("purDate").toString());
+        }
+        s.endArray();
     }
     s.endArray();
 }
@@ -845,10 +924,17 @@ void MainWindow::saveGroups()
         QTreeWidgetItem *group = m_stockTree->topLevelItem(i);
         s.setValue("name",     group->data(0, Qt::UserRole).toString());
         s.setValue("expanded", group->isExpanded());
-        QStringList stocks;
-        for (int j = 0; j < group->childCount(); ++j)
-            stocks << group->child(j)->text(0);
-        s.setValue("stocks", stocks);
+        
+        s.beginWriteArray("stocks");
+        for (int j = 0; j < group->childCount(); ++j) {
+            s.setArrayIndex(j);
+            QTreeWidgetItem *child = group->child(j);
+            s.setValue("sym",      child->text(2));
+            s.setValue("star",     child->data(0, StarRole).toInt());
+            s.setValue("purPrice", child->data(4, PurPriceRole).toDouble());
+            s.setValue("purDate",  child->data(5, PurDateRole).toString());
+        }
+        s.endArray();
     }
     s.endArray();
 }
@@ -937,7 +1023,7 @@ QStringList MainWindow::selectedSymbols() const
     QStringList syms;
     for (const QTreeWidgetItem *item : m_stockTree->selectedItems())
         if (item->parent())
-            syms << item->text(0);
+            syms << item->text(2);
     return syms;
 }
 
@@ -1020,21 +1106,8 @@ void MainWindow::onError(const QString &symbol, const QString &message)
     }
 }
 
-void MainWindow::onYScaleChanged(int index) {
-    updateChart(getSelectedSymbols()); // Trigger redraw
-}
-
-QStringList MainWindow::getSelectedSymbols() const
-{
-    QStringList symbols;
-    QList<QTreeWidgetItem*> selectedItems = m_stockTree->selectedItems();
-    for (QTreeWidgetItem* item : selectedItems) {
-        // Only add if it's a child node (a symbol), not a group header
-        if (item->parent()) {
-            symbols << item->text(0);
-        }
-    }
-    return symbols;
+void MainWindow::onYScaleChanged(int /*index*/) {
+    updateChart(selectedSymbols()); // Trigger redraw
 }
 
 void MainWindow::updateChart(const QStringList &selectedSymbols)
@@ -1169,48 +1242,30 @@ void MainWindow::updateChart(const QStringList &selectedSymbols)
     if (minTime.isNull()) { updateCrosshair(); 
         isUpdating = false;
         return;
-    } // no data in range
+    }
 
-    axisX->setMin(minTime);
-    axisX->setMax(maxTime);
-    double pad = std::max(0.5, (maxPct - minPct) * 0.08);
-    axisY->setMin(minPct - pad);
-    axisY->setMax(maxPct + pad);
-    m_chart->legend()->setVisible(true);
-    updateCrosshair();
+    axisX->setRange(minTime, maxTime);
 
-    // Calculate Min/Max for Auto or Fixed Percent
-    double globalMin = std::numeric_limits<double>::max();
-    double globalMax = -std::numeric_limits<double>::max();
-
-    // ... (logic to iterate data points to find actual min/max)
-
-     axisY = qobject_cast<QValueAxis*>(m_chart->axes(Qt::Vertical).first());
+    axisY = qobject_cast<QValueAxis*>(m_chart->axes(Qt::Vertical).constFirst());
     if (axisY) {
         int scaleIdx = m_yScaleCombo->currentIndex();
         if (scaleIdx == 0) { // Auto
-            axisY->setRange(globalMin * 0.99, globalMax * 1.01);
+            double pad = std::max(0.5, (maxPct - minPct) * 0.08);
+            axisY->setRange(minPct - pad, maxPct + pad);
         }
         else {
-            // Requirement 4: Fixed % Scaling
             double percent = 0.0;
-            if (scaleIdx == 1) 
-                percent = 0.30;      // +/- 30%
-            else if (scaleIdx == 2) 
-                percent = 0.20;     // +/- 20%
-            else if (scaleIdx == 3) 
-                percent = 0.10;     // +/- 10%
+            if (scaleIdx == 1) percent = 30.0;      // +/- 30%
+            else if (scaleIdx == 2) percent = 20.0; // +/- 20%
+            else if (scaleIdx == 3) percent = 10.0; // +/- 10%
 
-
-            // Scale relative to the 0 line or the mid-point of the data
-            // double mid = (m_showPercentChange) ? 0.0 : (globalMax + globalMin) / 2.0;
-            double mid = 0.0;
-            double range = percent * 100.0;
-
-            axisY->setRange(mid - range, mid + range);
-            updateZeroLine();
+            axisY->setRange(-percent, percent);
         }
     }
+
+    m_chart->legend()->setVisible(true);
+    updateCrosshair();
+    updateZeroLine();
 
     isUpdating = false;
 }
@@ -1233,6 +1288,11 @@ void MainWindow::loadSettings()
     loadDailyCallCounts();
     loadSymbolTypeCache();
     loadTableSettings();
+
+    if (s.contains("mainSplitterState")) {
+        m_splitter->restoreState(s.value("mainSplitterState").toByteArray());
+    }
+
     loadGroups();
     setActiveProvider(s.value("activeProvider", m_providers.first()->id()).toString());
 }
@@ -1241,12 +1301,19 @@ void MainWindow::saveSettings()
 {
     QSettings s("StockChart", "StockChart");
     s.setValue("activeProvider", m_activeProviderId);
+    s.setValue("mainSplitterState", m_splitter->saveState());
     for (StockDataProvider *p : m_providers) {
         s.beginGroup(p->id());
         for (const auto &field : p->credentialFields())
             s.setValue(field.first, p->credentials().value(field.first));
         s.endGroup();
     }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    saveSettings();
+    QMainWindow::closeEvent(event);
 }
 
 // ── API info panel ────────────────────────────────────────────────────────────
@@ -1391,6 +1458,25 @@ QIcon MainWindow::makeErrorIcon()
     return QApplication::style()->standardIcon(QStyle::SP_MessageBoxWarning);
 }
 
+QIcon MainWindow::makeStarIcon(int index)
+{
+    if (index <= 0) return QIcon();
+    static const QColor colors[] = { Qt::transparent, QColor("#FFD700"), QColor("#448AFF"),
+                                     QColor("#4CAF50"), QColor("#F44336"), QColor("#9C27B0") };
+    QPixmap pm(16, 16);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setBrush(colors[index % 6]);
+    p.setPen(QPen(p.brush().color().darker(), 1));
+
+    static const QPointF points[] = {
+        {8, 1}, {10, 6}, {15, 6}, {11, 9}, {13, 15}, {8, 12}, {3, 15}, {5, 9}, {1, 6}, {6, 6}
+    };
+    p.drawPolygon(points, 10);
+    return QIcon(pm);
+}
+
 void MainWindow::onSymbolTypeReady(const QString &symbol, SymbolType type)
 {
     if (m_symbolTypes.value(symbol) == type) return; // no change
@@ -1412,20 +1498,20 @@ void MainWindow::updateTreeItemIcon(const QString& symbol) {
         QTreeWidgetItem* group = m_stockTree->topLevelItem(i);
         for (int j = 0; j < group->childCount(); ++j) {
             QTreeWidgetItem* child = group->child(j);
-            if (child->text(0) == symbol) {
+            if (child->text(2) == symbol) {
                 // update icon
-                child->setIcon(0, icon);
+                child->setIcon(1, icon); 
                 // update price and background based on cache
                 if (m_cache.contains(symbol) && !m_cache[symbol].isEmpty()) {
                     const double latest = m_cache[symbol].last().price;
-                    child->setText(1, QString("$%1").arg(latest, 0, 'f', 2));
-                    child->setBackground(0, QBrush(cachedBg));
-                    child->setBackground(1, QBrush(cachedBg));
+                    child->setText(3, QString("$%1").arg(latest, 0, 'f', 2));
+                    child->setBackground(2, QBrush(cachedBg));
+                    child->setBackground(3, QBrush(cachedBg));
                 }
                 else {
-                    child->setText(1, QString());
-                    child->setBackground(0, QBrush());
-                    child->setBackground(1, QBrush());
+                    child->setText(3, QString());
+                    child->setBackground(2, QBrush());
+                    child->setBackground(3, QBrush());
                 }
             }
         }
@@ -1438,16 +1524,16 @@ void MainWindow::refreshAllStockCacheVisuals() {
         QTreeWidgetItem *group = m_stockTree->topLevelItem(i); 
         for (int j = 0; j < group->childCount(); ++j) {
             QTreeWidgetItem *child = group->child(j); 
-            const QString sym = child->text(0); 
+            const QString sym = child->text(2); 
             if (m_cache.contains(sym) && !m_cache[sym].isEmpty()) { 
                 const double latest = m_cache[sym].last().price; 
-                child->setText(1, QString("$%1").arg(latest, 0, 'f', 2));
-                child->setBackground(0, QBrush(cachedBg));
-                child->setBackground(1, QBrush(cachedBg)); 
+                child->setText(3, QString("$%1").arg(latest, 0, 'f', 2));
+                child->setBackground(2, QBrush(cachedBg));
+                child->setBackground(3, QBrush(cachedBg)); 
             } 
-            else { child->setText(1, QString()); 
-            child->setBackground(0, QBrush()); 
-            child->setBackground(1, QBrush()); 
+            else { child->setText(3, QString()); 
+            child->setBackground(2, QBrush()); 
+            child->setBackground(3, QBrush()); 
             }
         }
     } 
@@ -1557,7 +1643,7 @@ void MainWindow::exportGroups()
         QStringList row;
         row << csvQuote(groupName);
         for (int j = 0; j < group->childCount(); ++j)
-            row << group->child(j)->text(0);
+            row << group->child(j)->text(2);
 
         out << row.join(", ") << "\n";
     }
@@ -1611,7 +1697,7 @@ void MainWindow::importGroups()
         // Collect existing stocks in this group to avoid duplicates
         QSet<QString> existing;
         for (int j = 0; j < groupItem->childCount(); ++j)
-            existing.insert(groupItem->child(j)->text(0));
+            existing.insert(groupItem->child(j)->text(2));
 
         for (const QString &sym : std::as_const(fields)) {
             const QString upper = sym.toUpper();

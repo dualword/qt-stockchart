@@ -1,9 +1,11 @@
 
 :: open x64 native tools command prompt
-rmdir /s /q build_win_vs
-mkdir build_win_vs
+
 
 cd build_win_vs
+
+del CMakeCache.txt
+rmdir /s /q CMakeFiles
 
 @echo - create the make Files/Microsoft
 c:\opt\cmake\bin\cmake.exe .. -G "Visual Studio 18 2026" -A x64 -DCMAKE_PREFIX_PATH="C:/opt/dev/qt/6.7.0/msvc2019_64"
