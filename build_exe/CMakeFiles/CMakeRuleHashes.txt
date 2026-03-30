@@ -1,0 +1,3 @@
+# Hashes of file build rules.
+d598c0aeb49adb97434c16ba9c78b087 CMakeFiles/StockChart_autogen
+a02436155158db044584540ffcbcef6c StockChart_autogen/timestamp
