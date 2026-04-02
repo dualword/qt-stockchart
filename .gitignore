@@ -1,8 +1,11 @@
-# C++ objects and libs
+# ==========================================
+# C++ / Compiler Artifacts
+# ==========================================
 *.slo
 *.lo
-*.d
 *.o
+*.obj
+*.d
 *.a
 *.la
 *.lai
@@ -10,40 +13,87 @@
 *.so.*
 *.dll
 *.dylib
+*.exe
+*.out
+*.app
+*.pdb
+*.ilk
+*.exp
+*.lib
 
-# CMake specific
-.cmake/
-CMakeFiles/
-CMakeCache.txt
-CMakeLists.txt.user
-cmake_install.cmake
-install_manifest.txt
-
-# Build directories
-build/
-build_exe/
-build_app/
-out/
-
-
-
-
-# Qt specific
+# ==========================================
+# Qt / QtCreator
+# ==========================================
+.qt/
+object_script.*.Release
+object_script.*.Debug
+*_plugin_import.cpp
+.qmake.cache
+.qmake.stash
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
 *.moc
 moc_*.cpp
+moc_*.h
 qrc_*.cpp
 ui_*.h
+*.qmlc
+*.jsc
+*.qm
+*.prl
+target_wrapper.*
+*.autosave
+*.qmlproject.user
+*.qmlproject.user.*
+compile_commands.json
+*creator.user*
+*_qmlcache.qrc
 
-# macOS specific
-.DS_Store
+# ==========================================
+# CMake / Build Directories
+# ==========================================
+# Captures 'build', 'build-Desktop-Debug', 'out', etc.
+[Bb]uild*/
+[Oo]ut*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+CMakeLists.txt.user*
 
-# windows
+# ==========================================
+# Visual Studio Specific (Windows)
+# ==========================================
 .vs/
-**/x64/
-**/Debug/
-**/Release/
-*_log
-*.pdb
-*.exe
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.db
+*.opendb
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userosscache
+*.sln.doccache
+# Visual Studio Image Library cache
+*.vshost.exe
+*.vshost.exe.config
+*.vshost.exe.manifest
 
+# ==========================================
+# OS Specific
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# Local Secrets
+# ==========================================
+secrets.cmake
 

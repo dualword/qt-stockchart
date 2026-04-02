@@ -749,39 +749,39 @@ StockChart_autogen/timestamp: \
 	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/limits.h \
 	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/ptrcheck.h \
 	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/stdarg.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/CMakeLists.txt \
-	/Users/dennislang/opt/projects/qt-projects/stocks/build_mac_exe/CMakeFiles/4.3.0/CMakeCXXCompiler.cmake \
-	/Users/dennislang/opt/projects/qt-projects/stocks/build_mac_exe/CMakeFiles/4.3.0/CMakeSystem.cmake \
-	/Users/dennislang/opt/projects/qt-projects/stocks/build_mac_exe/StockChart_autogen/moc_predefs.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/AlphaVantageProvider.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/AlphaVantageProvider.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/ApiCallTracker.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/ApiCallTracker.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/ChartManager.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/ChartManager.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/CrashHandler.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/CrashHandler.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/CsvPorter.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/CsvPorter.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/FinnhubProvider.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/FinnhubProvider.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/MainWindow.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/MainWindow.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/PolygonProvider.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/PolygonProvider.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/SettingsDialog.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/SettingsDialog.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/StockCacheManager.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/StockCacheManager.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/StockDataProvider.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/StockDataProvider.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/StockGroupManager.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/StockGroupManager.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/TableManager.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/TableManager.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/TwelveDataProvider.cpp \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/TwelveDataProvider.h \
-	/Users/dennislang/opt/projects/qt-projects/stocks/src/main.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/CMakeLists.txt \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/build_mac_exe/CMakeFiles/4.3.0/CMakeCXXCompiler.cmake \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/build_mac_exe/CMakeFiles/4.3.0/CMakeSystem.cmake \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/build_mac_exe/StockChart_autogen/moc_predefs.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/AlphaVantageProvider.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/AlphaVantageProvider.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/ApiCallTracker.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/ApiCallTracker.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/ChartManager.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/ChartManager.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/CrashHandler.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/CrashHandler.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/CsvPorter.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/CsvPorter.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/FinnhubProvider.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/FinnhubProvider.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/MainWindow.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/MainWindow.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/PolygonProvider.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/PolygonProvider.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/SettingsDialog.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/SettingsDialog.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/StockCacheManager.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/StockCacheManager.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/StockDataProvider.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/StockDataProvider.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/StockGroupManager.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/StockGroupManager.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/TableManager.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/TableManager.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/TwelveDataProvider.cpp \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/TwelveDataProvider.h \
+	/Users/dennislang/opt/projects/qt-projects/qt-stockchart/src/main.cpp \
 	/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtCore.framework/Versions/A/Headers/QDate \
 	/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtCore.framework/Versions/A/Headers/QDateTime \
 	/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtCore.framework/Versions/A/Headers/QFlags \
