@@ -42,7 +42,7 @@ void ChartManager::updateChart(const QStringList &selectedSymbols)
     if (isUpdating) return;
     isUpdating = true;
 
-    m_isSingleStock = false;
+    m_showMinMax = false;
     m_chart->removeAllSeries();
     for (QAbstractAxis *ax : m_chart->axes()) m_chart->removeAxis(ax);
 
@@ -220,7 +220,7 @@ void ChartManager::updateChart(const QStringList &selectedSymbols)
                 }
             }
 
-            m_isSingleStock = true;
+            m_showMinMax = true;
             m_minPct        = singleMinPct;
             m_maxPct        = singleMaxPct;
             m_minPrice      = singleMinPrice;
@@ -244,6 +244,14 @@ void ChartManager::updateChart(const QStringList &selectedSymbols)
     }
 
     axisX->setRange(minTime, maxTime);
+
+    if (!singleStock) {
+        m_showMinMax = true;
+        m_minPct     = minPct;
+        m_maxPct     = maxPct;
+        m_minPrice   = 0.0;
+        m_maxPrice   = 0.0;
+    }
 
     axisY = qobject_cast<QValueAxis*>(m_chart->axes(Qt::Vertical).constFirst());
     if (axisY) {
@@ -353,7 +361,7 @@ void ChartManager::updateMinMaxLines()
         m_maxLabel->setZValue(3);
     }
 
-    if (!m_isSingleStock) {
+    if (!m_showMinMax) {
         m_minLine->setVisible(false);
         m_maxLine->setVisible(false);
         m_minLabel->setVisible(false);
@@ -384,10 +392,9 @@ void ChartManager::updateMinMaxLines()
         line->setVisible(true);
 
         const QString sign = (pct >= 0.0) ? "+" : "";
-        const QString text = QString("%1%2%  $%3")
-                                 .arg(sign)
-                                 .arg(pct,   0, 'f', 1)
-                                 .arg(price, 0, 'f', 2);
+        const QString text = (price > 0.0)
+            ? QString("%1%2%  $%3").arg(sign).arg(pct, 0, 'f', 1).arg(price, 0, 'f', 2)
+            : QString("%1%2%").arg(sign).arg(pct, 0, 'f', 1);
         label->setPlainText(text);
         const double lw = label->boundingRect().width();
         const double lh = label->boundingRect().height();

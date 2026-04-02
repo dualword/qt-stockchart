@@ -68,8 +68,8 @@ private:
     qint64 m_clickedMsecs   = -1;
     QDate  m_clickedDate;
 
-    // Single-stock extremes for min/max reference lines
-    bool   m_isSingleStock = false;
+    // Extremes for min/max reference lines (set for both single and multi-stock)
+    bool   m_showMinMax = false;
     double m_minPct        = 0.0;
     double m_maxPct        = 0.0;
     double m_minPrice      = 0.0;

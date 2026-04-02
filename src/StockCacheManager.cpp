@@ -70,3 +70,37 @@ void StockCacheManager::saveSymbolType(const QString &symbol, SymbolType type)
     s.setValue(symbol, static_cast<int>(type));
     s.endGroup();
 }
+
+void StockCacheManager::saveLoadTimes()
+{
+    QSettings s("StockChart", "StockChart");
+    s.beginGroup("loadTimes");
+    s.remove("");
+    for (auto it = m_loadTimes.cbegin(); it != m_loadTimes.cend(); ++it)
+        s.setValue(it.key(), it.value().toString(Qt::ISODate));
+    s.endGroup();
+}
+
+void StockCacheManager::loadLoadTimes()
+{
+    QSettings s("StockChart", "StockChart");
+    s.beginGroup("loadTimes");
+    for (const QString &sym : s.childKeys()) {
+        QDateTime dt = QDateTime::fromString(s.value(sym).toString(), Qt::ISODate);
+        if (dt.isValid()) m_loadTimes[sym] = dt;
+    }
+    s.endGroup();
+}
+
+QString StockCacheManager::ageString(const QString &sym) const
+{
+    if (!m_loadTimes.contains(sym)) return {};
+    qint64 secs = m_loadTimes[sym].secsTo(QDateTime::currentDateTime());
+    if (secs < 0) secs = 0;
+    const qint64 days = secs / 86400;
+    const qint64 hrs  = secs / 3600;
+    const qint64 mins = secs / 60;
+    if (days >= 1) return QString("%1d").arg(days);
+    if (hrs  >= 1) return QString("%1h").arg(hrs);
+    return QString("%1m").arg(qMax(qint64(1), mins));
+}

@@ -77,8 +77,8 @@ void MainWindow::setupUI()
 #ifdef Q_OS_MACOS
     m_stockTree->setStyle(QStyleFactory::create("Fusion"));
 #endif
-    m_stockTree->setColumnCount(6);
-    m_stockTree->setHeaderLabels({"*", "Type", "Symbol", "Price", "Pur. $", "Pur. Date"});
+    m_stockTree->setColumnCount(7);
+    m_stockTree->setHeaderLabels({"*", "Type", "Symbol", "Age", "Price", "Pur. $", "Pur. Date"});
     m_stockTree->setHeaderHidden(false);
     m_stockTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_stockTree->setIndentation(12);
@@ -88,9 +88,10 @@ void MainWindow::setupUI()
     m_stockTree->header()->resizeSection(0, 32);
     m_stockTree->header()->resizeSection(1, 24);
     m_stockTree->header()->resizeSection(2, 80);
-    m_stockTree->header()->resizeSection(3, 70);
+    m_stockTree->header()->resizeSection(3, 50);
     m_stockTree->header()->resizeSection(4, 70);
-    m_stockTree->header()->resizeSection(5, 100);
+    m_stockTree->header()->resizeSection(5, 70);
+    m_stockTree->header()->resizeSection(6, 100);
 
     connect(m_stockTree, &QTreeWidget::itemSelectionChanged,
             this, &MainWindow::onStockSelectionChanged);
@@ -422,7 +423,21 @@ void MainWindow::onStockSelectionChanged()
 
 void MainWindow::onDataReady(const QString &symbol, const QVector<StockDataPoint> &data)
 {
-    m_cacheManager->cache()[symbol] = data;
+    auto &existing = m_cacheManager->cache()[symbol];
+    if (existing.isEmpty()) {
+        existing = data;
+    } else {
+        QMap<QDateTime, double> merged;
+        for (const StockDataPoint &pt : std::as_const(existing))
+            merged[pt.timestamp] = pt.price;
+        for (const StockDataPoint &pt : data)
+            merged[pt.timestamp] = pt.price;
+        existing.clear();
+        existing.reserve(merged.size());
+        for (auto it = merged.cbegin(); it != merged.cend(); ++it)
+            existing.append({it.key(), it.value()});
+    }
+    m_cacheManager->setLoadTime(symbol);
 
     m_groupManager->symbolErrors().remove(symbol);
     m_groupManager->updateTreeItemIcon(symbol);
@@ -481,6 +496,7 @@ void MainWindow::loadSettings()
 
     m_cacheManager->loadCache();
     m_cacheManager->loadSymbolTypeCache();
+    m_cacheManager->loadLoadTimes();
 
     // Build the API info panel now that the left layout is complete.
     // We need to reach the left panel's layout — find it via the splitter.
@@ -513,6 +529,7 @@ void MainWindow::saveSettings()
     s.setValue("activeProvider",     m_activeProviderId);
     s.setValue("mainSplitterState",  m_splitter->saveState());
     m_cacheManager->saveCache();
+    m_cacheManager->saveLoadTimes();
     for (StockDataProvider *p : m_providers) {
         s.beginGroup(p->id());
         for (const auto &field : p->credentialFields())
