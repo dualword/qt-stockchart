@@ -220,6 +220,7 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
 
     // ── Vertical splitter: chart (top) | table (bottom) ──────────────────────
     auto *vertSplitter = new QSplitter(Qt::Vertical, parent);
+    vertSplitter->setHandleWidth(8);
     vertSplitter->setChildrenCollapsible(true);
 
     auto *chart = new QChart();
@@ -343,8 +344,13 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 void MainWindow::setActiveProvider(const QString &id)
 {
+    // Save any in-session data before clearing, so it survives the reload below.
+    m_cacheManager->saveCache();
     m_activeProviderId = id;
     m_cacheManager->cache().clear();
+    // Restore from QSettings immediately — saveCache() only writes entries, never
+    // deletes keys, so the data written above (and from prior sessions) is still there.
+    m_cacheManager->loadCache();
 
     for (QAction *action : m_providerActionGroup->actions())
         action->setChecked(action->data().toString() == id);
@@ -361,6 +367,11 @@ void MainWindow::setActiveProvider(const QString &id)
 
     if (m_apiTracker) m_apiTracker->updatePanel(id);
     saveSettings();
+
+    // Refresh the tree so Age/Price/Background remain visible after a provider switch.
+    // Guard against being called during loadSettings() before loadGroups() has run.
+    if (m_stockTree->topLevelItemCount() > 0)
+        m_groupManager->refreshAllStockCacheVisuals();
 }
 
 StockDataProvider *MainWindow::activeProvider() const
@@ -581,19 +592,18 @@ void MainWindow::loadSettings()
     if (s.contains("mainSplitterState"))
         m_splitter->restoreState(s.value("mainSplitterState").toByteArray());
 
+    // setActiveProvider clears m_cache but immediately reloads it from QSettings,
+    // so the cache is populated before loadGroups() runs below.
+    setActiveProvider(s.value("activeProvider", m_providers.first()->id()).toString());
+    m_cacheManager->loadCache();         // second load is harmless; ensures cache is fresh
+    m_cacheManager->loadSymbolTypeCache();
+
+    // Load groups AFTER the cache is populated so addStockToGroup() can display
+    // Age, Price, and background colours from the very first paint.
     m_groupManager->loadGroups();
 
     // Build CSV porter now that group manager is ready
     m_csvPorter = new CsvPorter(m_stockTree, m_groupManager, this);
-
-    // setActiveProvider clears m_cache and calls saveCache. saveCache only writes
-    // current m_cache entries to QSettings — it never deletes existing keys — so
-    // calling loadCache AFTER setActiveProvider re-populates m_cache from the
-    // still-intact QSettings data, preserving cached prices across sessions.
-    setActiveProvider(s.value("activeProvider", m_providers.first()->id()).toString());
-    m_cacheManager->loadCache();
-    m_cacheManager->loadSymbolTypeCache();
-    m_groupManager->refreshAllStockCacheVisuals();
 }
 
 void MainWindow::saveSettings()

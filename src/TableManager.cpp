@@ -85,7 +85,7 @@ void TableManager::setExpanded(bool expanded)
     } else {
         m_table->show();
         const int total  = m_vertSplitter->height();
-        const int tableH = (m_savedTableHeight > 0) ? m_savedTableHeight : total / 2;
+        const int tableH = (m_savedTableHeight > 0) ? m_savedTableHeight : 100;
         m_vertSplitter->setSizes({ total - tableH, tableH });
         m_toggleBtn->setText("▲ Table");
     }
