@@ -401,8 +401,8 @@ void ChartManager::updateMinMaxLines()
         const double lw = label->boundingRect().width();
         const double lh = label->boundingRect().height();
         const double lx = plotRect.left() + (plotRect.width() - lw) / 2.0;
-        // Min line is at the bottom: label goes above it. Max line at top: label below.
-        const double ly = isMin ? (pt.y() - lh - 2) : (pt.y() + 2);
+        // Max line is at the top: label goes above it. Min line at bottom: label below.
+        const double ly = isMin ? (pt.y() + 2) : (pt.y() - lh - 2);
         label->setPos(lx, ly);
         label->setVisible(true);
     };
