@@ -21,6 +21,7 @@ class QChart;
 class QChartView;
 class QTableWidget;
 class QCloseEvent;
+class QShowEvent;
 class QBoxLayout;
 
 class MainWindow : public QMainWindow
@@ -47,6 +48,7 @@ private:
     void loadSettings();
     void saveSettings();
     void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
 
     void rebuildPeriodButtons(const QList<int> &periods);
@@ -73,4 +75,6 @@ private:
     QString                   m_activeProviderId;
 
     const QString kAppVersion = "1.1.0";
+
+    bool m_tableRestored = false; // guard: restoreTableSplitter() called only once
 };

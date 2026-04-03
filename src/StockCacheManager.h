@@ -35,6 +35,13 @@ public:
     // Returns NaN if no data point exists at or before that date.
     static double priceAt(const QVector<StockDataPoint> &data, const QDate &target);
 
+    // Normalizes a cache vector in place:
+    //   - Sorts ascending by timestamp.
+    //   - Drops data older than 2 years.
+    //   - Reduces data older than 7 days to one point per day (closest to 16:00 ET).
+    //   - Keeps all points within the last 7 days unchanged.
+    static void normalizeCache(QVector<StockDataPoint> &points);
+
     QMap<QString, QVector<StockDataPoint>> &cache()             { return m_cache; }
     const QMap<QString, QVector<StockDataPoint>> &cache() const { return m_cache; }
 

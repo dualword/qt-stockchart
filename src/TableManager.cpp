@@ -65,9 +65,19 @@ void TableManager::loadSettings()
     m_displayModeBtn->setChecked(m_showPercentChange);
     m_displayModeBtn->setText(m_showPercentChange ? "% Change" : "Price");
 
-    m_savedTableHeight = s.value("tableHeight", -1).toInt();
-    bool expanded = s.value("tableExpanded", false).toBool();
-    setExpanded(expanded);
+    // Table open/closed state — just show/hide the widget here.
+    // Splitter sizes are applied later via restoreTableSplitter() from showEvent,
+    // once the window is fully laid out and the splitter has a real height.
+    m_savedTableHeight   = s.value("tableHeight", -1).toInt();
+    m_savedSplitterState = s.value("vertSplitterState").toByteArray();
+    m_tableExpanded      = s.value("tableExpanded", false).toBool();
+    if (m_tableExpanded) {
+        m_table->show();
+        m_toggleBtn->setText("▲ Table");
+    } else {
+        m_table->hide();
+        m_toggleBtn->setText("▼ Table");
+    }
 }
 
 void TableManager::saveSettings()
@@ -79,6 +89,9 @@ void TableManager::saveSettings()
     s.setValue("tableShowPercent", m_showPercentChange);
     s.setValue("tableExpanded",   m_tableExpanded);
     s.setValue("tableHeight",     m_savedTableHeight);
+    // Save splitter state only when the table is open so the stored state is meaningful
+    if (m_tableExpanded)
+        s.setValue("vertSplitterState", m_vertSplitter->saveState());
 }
 
 // ── Expand / collapse ─────────────────────────────────────────────────────────
@@ -98,12 +111,35 @@ void TableManager::setExpanded(bool expanded)
         m_toggleBtn->setText("▼ Table");
     } else {
         m_table->show();
-        const int total  = m_vertSplitter->height();
-        const int tableH = (m_savedTableHeight > 0) ? m_savedTableHeight : 100;
-        m_vertSplitter->setSizes({ total - tableH, tableH });
         m_toggleBtn->setText("▲ Table");
+        // This path is only reached at runtime (user toggle), so the window is
+        // already shown and the splitter has a valid height.
+        const int total  = m_vertSplitter->height();
+        if (total > 0) {
+            const int tableH = qBound(50, (m_savedTableHeight > 0) ? m_savedTableHeight : 150,
+                                      total - 50);
+            m_vertSplitter->setSizes({ total - tableH, tableH });
+        }
     }
     saveSettings();
+}
+
+void TableManager::restoreTableSplitter()
+{
+    if (!m_tableExpanded) return;
+
+    // Prefer the full saved state (proportionally scaled to current height).
+    if (!m_savedSplitterState.isEmpty()) {
+        m_vertSplitter->restoreState(m_savedSplitterState);
+        return;
+    }
+    // Fallback: use saved height or default to 25% of available space.
+    const int total  = m_vertSplitter->height();
+    if (total > 0) {
+        const int defaultH = qMax(50, total / 4);
+        const int tableH   = qBound(50, (m_savedTableHeight > 0) ? m_savedTableHeight : defaultH, total - 50);
+        m_vertSplitter->setSizes({ total - tableH, tableH });
+    }
 }
 
 void TableManager::onSplitterMoved()

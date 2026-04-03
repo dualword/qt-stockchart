@@ -32,6 +32,7 @@ public:
     void setActivePeriodDays(int days) { m_activePeriodDays = days; }
     void setSeriesColors(const QMap<QString, QColor> &colors) { m_seriesColors = colors; }
 
+    void restoreTableSplitter(); // call once from MainWindow::showEvent
     void configurePeriods();
     void onToggleDisplayMode(bool checked);
     void onToggle();
@@ -52,6 +53,7 @@ private:
 
     bool       m_tableExpanded     = false;
     int        m_savedTableHeight  = -1;
+    QByteArray m_savedSplitterState;
     bool       m_showPercentChange = false;
     QList<int> m_periods;
     int        m_activePeriodDays  = 0;

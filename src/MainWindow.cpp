@@ -478,6 +478,7 @@ void MainWindow::onDataReady(const QString &symbol, const QVector<StockDataPoint
         for (auto it = merged.cbegin(); it != merged.cend(); ++it)
             existing.append({it.key(), it.value()});
     }
+    StockCacheManager::normalizeCache(existing);
     m_groupManager->symbolErrors().remove(symbol);
     m_groupManager->updateTreeItemIcon(symbol);
 
@@ -642,6 +643,14 @@ void MainWindow::loadSettings()
     // Age, Price, and background colours from the very first paint.
     m_groupManager->loadGroups();
 
+    // Restore previously selected symbols (signals are blocked inside selectSymbols,
+    // so we trigger onStockSelectionChanged manually afterward).
+    const QStringList lastSelected = s.value("selectedSymbols").toStringList();
+    if (!lastSelected.isEmpty()) {
+        m_groupManager->selectSymbols(lastSelected);
+        onStockSelectionChanged();
+    }
+
     // Build CSV porter now that group manager is ready
     m_csvPorter = new CsvPorter(m_stockTree, m_groupManager, this);
 }
@@ -651,12 +660,30 @@ void MainWindow::saveSettings()
     QSettings s("StockChart", "StockChart");
     s.setValue("activeProvider",     m_activeProviderId);
     s.setValue("mainSplitterState",  m_splitter->saveState());
+    if (m_groupManager)
+        s.setValue("selectedSymbols", m_groupManager->selectedSymbols());
     m_cacheManager->saveCache();
+    if (m_tableManager) m_tableManager->saveSettings();
     for (StockDataProvider *p : m_providers) {
         s.beginGroup(p->id());
         for (const auto &field : p->credentialFields())
             s.setValue(field.first, p->credentials().value(field.first));
         s.endGroup();
+    }
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    // Restore the table splitter once, after the first real layout pass.
+    // showEvent fires during show() before children finish layout, so we defer
+    // one tick; by the time the timer fires, show() has completed and the
+    // splitter has its correct height.
+    if (!m_tableRestored) {
+        m_tableRestored = true;
+        QTimer::singleShot(0, this, [this]() {
+            if (m_tableManager) m_tableManager->restoreTableSplitter();
+        });
     }
 }
 

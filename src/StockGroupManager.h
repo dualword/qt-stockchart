@@ -39,6 +39,7 @@ public:
 
     // Selection
     QStringList selectedSymbols() const;
+    void selectSymbols(const QStringList &symbols);
 
     // Error tracking (maintained here, but MainWindow sets errors on onError)
     QSet<QString> &symbolErrors()             { return m_symbolErrors; }

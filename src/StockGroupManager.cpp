@@ -513,3 +513,18 @@ QStringList StockGroupManager::selectedSymbols() const
             syms << item->text(2);
     return syms;
 }
+
+void StockGroupManager::selectSymbols(const QStringList &symbols)
+{
+    if (symbols.isEmpty()) return;
+    QSignalBlocker blocker(m_tree);
+    m_tree->clearSelection();
+    for (int i = 0; i < m_tree->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *group = m_tree->topLevelItem(i);
+        for (int j = 0; j < group->childCount(); ++j) {
+            QTreeWidgetItem *child = group->child(j);
+            if (symbols.contains(child->text(2)))
+                child->setSelected(true);
+        }
+    }
+}

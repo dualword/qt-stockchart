@@ -4,6 +4,7 @@
 #include <QTime>
 #include <limits>
 #include <cmath>
+#include <algorithm>
 
 double StockCacheManager::priceAt(const QVector<StockDataPoint> &data, const QDate &target)
 {
@@ -15,6 +16,55 @@ double StockCacheManager::priceAt(const QVector<StockDataPoint> &data, const QDa
             break;
     }
     return result;
+}
+
+void StockCacheManager::normalizeCache(QVector<StockDataPoint> &points)
+{
+    if (points.isEmpty()) return;
+
+    // 1. Sort ascending by timestamp.
+    std::sort(points.begin(), points.end(),
+              [](const StockDataPoint &a, const StockDataPoint &b) {
+                  return a.timestamp < b.timestamp;
+              });
+
+    const QDate today       = QDate::currentDate();
+    const QDate twoYearsAgo = today.addYears(-2);
+    const QDate sevenDaysAgo = today.addDays(-7);
+    const QTimeZone etZone("America/New_York");
+    const QTime closeTime(16, 0, 0);
+
+    QVector<StockDataPoint> result;
+    result.reserve(points.size());
+
+    int i = 0;
+
+    // 2. Drop data older than 2 years.
+    while (i < points.size() && points[i].timestamp.date() < twoYearsAgo)
+        ++i;
+
+    // 3. For data older than 7 days: keep one point per day, closest to 16:00 ET.
+    while (i < points.size() && points[i].timestamp.date() < sevenDaysAgo) {
+        const QDate day = points[i].timestamp.date();
+        int best = i;
+        int bestDist = std::numeric_limits<int>::max();
+        while (i < points.size() && points[i].timestamp.date() == day) {
+            const int dist = qAbs(
+                points[i].timestamp.toTimeZone(etZone).time().secsTo(closeTime));
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = i;
+            }
+            ++i;
+        }
+        result.append(points[best]);
+    }
+
+    // 4. Data within 7 days: keep all points.
+    while (i < points.size())
+        result.append(points[i++]);
+
+    points = std::move(result);
 }
 
 void StockCacheManager::saveCache()
@@ -50,7 +100,10 @@ void StockCacheManager::loadCache()
             if (!dt.isNull())
                 points.append({dt, p});
         }
-        if (!points.isEmpty()) m_cache[sym] = points;
+        if (!points.isEmpty()) {
+            normalizeCache(points);
+            m_cache[sym] = points;
+        }
     }
     s.endGroup();
 }
