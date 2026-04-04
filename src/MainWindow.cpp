@@ -118,10 +118,21 @@ void MainWindow::setupUI()
     // m_groupManager must exist before setCurrentIndex(2) fires currentIndexChanged.
     m_groupManager = new StockGroupManager(m_stockTree, m_cacheManager, this, this);
 
-    // Refresh the Age column every minute so displayed values stay current
+    // Every minute: refresh the Age column display and re-fetch any selected
+    // symbols whose cached data has gone stale since they were last loaded.
     auto *ageTimer = new QTimer(this);
     connect(ageTimer, &QTimer::timeout, this, [this]() {
         m_groupManager->refreshAllStockCacheVisuals();
+
+        StockDataProvider *p = activeProvider();
+        if (!p || !p->hasCredentials()) return;
+        for (const QString &sym : m_groupManager->selectedSymbols()) {
+            if (!m_cacheManager->isDataFresh(sym)) {
+                m_apiTracker->incrementCallCount(p->id());
+                m_apiTracker->updatePanel(m_activeProviderId);
+                p->fetchData(sym, "3mo");
+            }
+        }
     });
     ageTimer->start(60 * 1000);
 
@@ -236,9 +247,18 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     layout->addWidget(hline);
 
     // ── Vertical splitter: chart (top) | table (bottom) ──────────────────────
+    static const char *kVertSplitterStyle =
+        "QSplitter::handle:vertical {"
+        "  background-color: #a0a0a0;"
+        "  border-top: 1px solid #707070;"
+        "  border-bottom: 1px solid #707070;"
+        "}"
+        "QSplitter::handle:vertical:hover { background-color: #5588cc; }";
+
     auto *vertSplitter = new QSplitter(Qt::Vertical, parent);
-    vertSplitter->setHandleWidth(8);
+    vertSplitter->setHandleWidth(6);
     vertSplitter->setChildrenCollapsible(true);
+    vertSplitter->setStyleSheet(kVertSplitterStyle);
 
     auto *chart = new QChart();
     chart->legend()->setAlignment(Qt::AlignTop);
@@ -272,8 +292,9 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
 
     // ── Outer vertical splitter: chart+table (top) | log pane (bottom) ──────
     m_outerSplitter = new QSplitter(Qt::Vertical, parent);
-    m_outerSplitter->setHandleWidth(8);
+    m_outerSplitter->setHandleWidth(6);
     m_outerSplitter->setChildrenCollapsible(true);
+    m_outerSplitter->setStyleSheet(kVertSplitterStyle);
     m_outerSplitter->addWidget(vertSplitter);
 
     // Log pane
