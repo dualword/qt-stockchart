@@ -81,6 +81,12 @@ WebBrowserWidget::WebBrowserWidget(QWidget *parent)
             m_tabs[idx].lastUrl = url.toString();
     });
 
+    // After each page load, repopulate the ad-block dialog's active domain list.
+    connect(page, &QWebEnginePage::loadFinished, this, [this](bool) {
+        if (m_adBlockDialog)
+            m_adBlockDialog->refreshActiveList();
+    });
+
     // ── Loading log ───────────────────────────────────────────────────────────
     connect(page, &QWebEnginePage::loadingChanged,
             this, [this](const QWebEngineLoadingInfo &info) {

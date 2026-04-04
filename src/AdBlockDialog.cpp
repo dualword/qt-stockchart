@@ -121,7 +121,7 @@ AdBlockDialog::AdBlockDialog(RequestInterceptor *interceptor, QWidget *parent)
     connect(m_addBtn,     &QPushButton::clicked,   this, &AdBlockDialog::onAdd);
     connect(m_removeBtn,  &QPushButton::clicked,   this, &AdBlockDialog::onRemove);
     connect(clearBtn,     &QToolButton::clicked,   this, &AdBlockDialog::onClearActive);
-    connect(reloadBtn,    &QToolButton::clicked,   this, &AdBlockDialog::reloadRequested);
+    connect(reloadBtn,    &QToolButton::clicked,   this, &AdBlockDialog::onReload);
     connect(m_adRegexEdit, &QLineEdit::textChanged, this, &AdBlockDialog::onRegexChanged);
 
     // Initialise regex from the edit field content and populate lists once.
@@ -168,6 +168,15 @@ void AdBlockDialog::onClearActive()
 {
     m_interceptor->clearTracking();
     m_activeList->clear();
+}
+
+void AdBlockDialog::onReload()
+{
+    // Clear tracking and the list so the page's fresh requests repopulate it.
+    m_interceptor->clearTracking();
+    m_activeList->clear();
+    emit reloadRequested();
+    // refreshActiveList() will be called by WebBrowserWidget once loadFinished fires.
 }
 
 void AdBlockDialog::onRegexChanged(const QString &text)

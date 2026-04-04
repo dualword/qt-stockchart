@@ -14,6 +14,9 @@ class AdBlockDialog : public QDialog
 public:
     explicit AdBlockDialog(RequestInterceptor *interceptor, QWidget *parent = nullptr);
 
+    // Called by WebBrowserWidget after a page load finishes.
+    void refreshActiveList();
+
 signals:
     void reloadRequested();
 
@@ -21,10 +24,10 @@ private slots:
     void onAdd();
     void onRemove();
     void onClearActive();
+    void onReload();
     void onRegexChanged(const QString &text);
 
 private:
-    void refreshActiveList();
     void refreshBlacklist();
 
     RequestInterceptor *m_interceptor  = nullptr;
