@@ -1,4 +1,5 @@
 #include "TwelveDataProvider.h"
+#include "Logger.h"
 #include <QNetworkRequest>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -38,6 +39,7 @@ void TwelveDataProvider::fetchData(const QString &symbol, const QString &range)
 
     QNetworkReply *reply = m_manager->get(request);
     m_pending[reply] = {symbol, range};
+    Logger::instance().append(QString("TwelveData [%1] GET %2").arg(symbol, url.toString()));
 }
 
 void TwelveDataProvider::onReplyFinished(QNetworkReply *reply)
@@ -45,6 +47,9 @@ void TwelveDataProvider::onReplyFinished(QNetworkReply *reply)
     if (!m_pending.contains(reply)) return;
     reply->deleteLater();
     auto [symbol, range] = m_pending.take(reply);
+
+    const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    Logger::instance().append(QString("TwelveData [%1] HTTP %2").arg(symbol).arg(httpStatus));
 
     if (reply->error() != QNetworkReply::NoError) {
         emit errorOccurred(symbol, reply->errorString());
@@ -93,8 +98,11 @@ void TwelveDataProvider::fetchSymbolType(const QString &symbol)
     request.setRawHeader("User-Agent", "StockChart/1.0");
 
     QNetworkReply *reply = m_manager->get(request);
+    Logger::instance().append(QString("TwelveData [%1] GET %2 (type)").arg(symbol, url.toString()));
     connect(reply, &QNetworkReply::finished, this, [this, reply, symbol]() {
         reply->deleteLater();
+        const int st = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        Logger::instance().append(QString("TwelveData [%1] HTTP %2 (type)").arg(symbol).arg(st));
         if (reply->error() != QNetworkReply::NoError) return;
         QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
         const QString typeStr = root["type"].toString();

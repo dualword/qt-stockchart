@@ -1,4 +1,5 @@
 #include "PolygonProvider.h"
+#include "Logger.h"
 #include <QNetworkRequest>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -46,6 +47,7 @@ void PolygonProvider::fetchData(const QString &symbol, const QString &range)
 
     QNetworkReply *reply = m_manager->get(request);
     m_pending[reply] = {symbol, range};
+    Logger::instance().append(QString("Polygon [%1] GET %2").arg(symbol, url.toString()));
 }
 
 void PolygonProvider::onReplyFinished(QNetworkReply *reply)
@@ -53,6 +55,9 @@ void PolygonProvider::onReplyFinished(QNetworkReply *reply)
     if (!m_pending.contains(reply)) return;
     reply->deleteLater();
     auto [symbol, range] = m_pending.take(reply);
+
+    const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    Logger::instance().append(QString("Polygon [%1] HTTP %2").arg(symbol).arg(httpStatus));
 
     // Always read the body — Polygon puts useful diagnostic JSON in error responses too.
     const QByteArray body = reply->readAll();
@@ -123,8 +128,11 @@ void PolygonProvider::fetchSymbolType(const QString &symbol)
     request.setRawHeader("User-Agent", "StockChart/1.0");
 
     QNetworkReply *reply = m_manager->get(request);
+    Logger::instance().append(QString("Polygon [%1] GET %2 (type)").arg(symbol, url.toString()));
     connect(reply, &QNetworkReply::finished, this, [this, reply, symbol]() {
         reply->deleteLater();
+        const int st = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        Logger::instance().append(QString("Polygon [%1] HTTP %2 (type)").arg(symbol).arg(st));
         if (reply->error() != QNetworkReply::NoError) return;
         QJsonObject results = QJsonDocument::fromJson(reply->readAll()).object()["results"].toObject();
         const QString typeCode = results["type"].toString();

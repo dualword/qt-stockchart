@@ -1,4 +1,5 @@
 #include "YahooFinanceProvider.h"
+#include "Logger.h"
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QJsonDocument>
@@ -45,8 +46,11 @@ void YahooFinanceProvider::fetchCrumb()
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                      QNetworkRequest::NoLessSafeRedirectPolicy);
 
+    Logger::instance().append("Yahoo: GET https://finance.yahoo.com/ (crumb step 1)");
     QNetworkReply *r = m_manager->get(req);
     connect(r, &QNetworkReply::finished, this, [this, r]() {
+        const int st1 = r->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        Logger::instance().append(QString("Yahoo: HTTP %1 (crumb step 1)").arg(st1));
         r->deleteLater();
 
         // Step 2: exchange cookies for a crumb token
@@ -56,8 +60,11 @@ void YahooFinanceProvider::fetchCrumb()
         req2.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                           QNetworkRequest::NoLessSafeRedirectPolicy);
 
+        Logger::instance().append("Yahoo: GET https://query2.finance.yahoo.com/v1/test/getcrumb (crumb step 2)");
         QNetworkReply *r2 = m_manager->get(req2);
         connect(r2, &QNetworkReply::finished, this, [this, r2]() {
+            const int st2 = r2->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            Logger::instance().append(QString("Yahoo: HTTP %1 (crumb step 2)").arg(st2));
             r2->deleteLater();
 
             if (r2->error() == QNetworkReply::NoError)
@@ -102,6 +109,7 @@ void YahooFinanceProvider::doFetch(const QString &symbol, const QString &range)
 
     QNetworkReply *reply = m_manager->get(request);
     m_pending[reply] = {symbol, range};
+    Logger::instance().append(QString("Yahoo [%1] GET %2").arg(symbol, url.toString()));
 }
 
 void YahooFinanceProvider::onReplyFinished(QNetworkReply *reply)
@@ -109,6 +117,9 @@ void YahooFinanceProvider::onReplyFinished(QNetworkReply *reply)
     if (!m_pending.contains(reply)) return;
     reply->deleteLater();
     auto [symbol, range] = m_pending.take(reply);
+
+    const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    Logger::instance().append(QString("Yahoo [%1] HTTP %2").arg(symbol).arg(httpStatus));
 
     if (reply->error() != QNetworkReply::NoError) {
         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -211,8 +222,11 @@ void YahooFinanceProvider::doFetchSymbolType(const QString &symbol)
                          QNetworkRequest::NoLessSafeRedirectPolicy);
 
     QNetworkReply *reply = m_manager->get(request);
+    Logger::instance().append(QString("Yahoo [%1] GET %2 (type)").arg(symbol, url.toString()));
     connect(reply, &QNetworkReply::finished, this, [this, reply, symbol]() {
         reply->deleteLater();
+        const int st = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        Logger::instance().append(QString("Yahoo [%1] HTTP %2 (type)").arg(symbol).arg(st));
         if (reply->error() != QNetworkReply::NoError) return;
 
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());

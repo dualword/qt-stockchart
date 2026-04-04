@@ -28,6 +28,30 @@ void StockCacheManager::normalizeCache(QVector<StockDataPoint> &points)
                   return a.timestamp < b.timestamp;
               });
 
+    // 1a. Remove duplicates sharing the same (date, hour, minute); keep the
+    //     largest timestamp in each bucket (last entry after ascending sort).
+    {
+        QVector<StockDataPoint> deduped;
+        deduped.reserve(points.size());
+        int j = 0;
+        while (j < points.size()) {
+            const QDateTime &base = points[j].timestamp;
+            int k = j + 1;
+            while (k < points.size()) {
+                const QDateTime &t = points[k].timestamp;
+                if (t.date()        == base.date()        &&
+                    t.time().hour() == base.time().hour() &&
+                    t.time().minute() == base.time().minute())
+                    ++k;
+                else
+                    break;
+            }
+            deduped.append(points[k - 1]); // largest timestamp in bucket
+            j = k;
+        }
+        points = std::move(deduped);
+    }
+
     const QDate today       = QDate::currentDate();
     const QDate twoYearsAgo = today.addYears(-2);
     const QDate sevenDaysAgo = today.addDays(-7);

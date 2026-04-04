@@ -5,6 +5,7 @@
 #include "PolygonProvider.h"
 #include "TwelveDataProvider.h"
 #include "YahooFinanceProvider.h"
+#include "Logger.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QWidget>
@@ -19,6 +20,8 @@
 #include <QChart>
 #include <QChartView>
 #include <QTableWidget>
+#include <QTextEdit>
+#include <QTextCursor>
 #include <QMouseEvent>
 #include <QContextMenuEvent>
 #include <QMenu>
@@ -267,7 +270,58 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     vertSplitter->addWidget(chartView);
     vertSplitter->addWidget(stockTable);
 
-    layout->addWidget(vertSplitter, 1);
+    // ── Outer vertical splitter: chart+table (top) | log pane (bottom) ──────
+    m_outerSplitter = new QSplitter(Qt::Vertical, parent);
+    m_outerSplitter->setHandleWidth(8);
+    m_outerSplitter->setChildrenCollapsible(true);
+    m_outerSplitter->addWidget(vertSplitter);
+
+    // Log pane
+    auto *logPane = new QWidget(m_outerSplitter);
+    auto *logLayout = new QVBoxLayout(logPane);
+    logLayout->setContentsMargins(0, 0, 0, 0);
+    logLayout->setSpacing(0);
+
+    auto *logHeader = new QWidget(logPane);
+    logHeader->setFixedHeight(24);
+    auto *logHeaderLayout = new QHBoxLayout(logHeader);
+    logHeaderLayout->setContentsMargins(6, 2, 6, 2);
+    logHeaderLayout->setSpacing(6);
+    auto *logLabel = new QLabel("Log", logHeader);
+    QFont logLabelFont = logLabel->font();
+    logLabelFont.setBold(true);
+    logLabel->setFont(logLabelFont);
+    auto *logClearBtn = new QPushButton("Clear", logHeader);
+    logClearBtn->setFixedHeight(20);
+    logClearBtn->setFixedWidth(50);
+    logHeaderLayout->addWidget(logLabel);
+    logHeaderLayout->addStretch();
+    logHeaderLayout->addWidget(logClearBtn);
+    logLayout->addWidget(logHeader);
+
+    m_logEdit = new QTextEdit(logPane);
+    m_logEdit->setReadOnly(true);
+    m_logEdit->setAcceptRichText(true);
+    m_logEdit->setFont(QFont("Courier", 10));
+    m_logEdit->setStyleSheet(
+        "QTextEdit { background-color: #1e1e1e; color: #d4d4d4; border: none; padding: 4px; }");
+    logLayout->addWidget(m_logEdit, 1);
+
+    m_outerSplitter->addWidget(logPane);
+    m_outerSplitter->setSizes({ 10000, 120 });
+
+    connect(&Logger::instance(), &Logger::messageLogged, this, [this](const QString &htmlLine) {
+        m_logEdit->append(htmlLine);
+        m_logEdit->moveCursor(QTextCursor::End);
+    });
+    connect(&Logger::instance(), &Logger::cleared, this, [this]() {
+        m_logEdit->clear();
+    });
+    connect(logClearBtn, &QPushButton::clicked, this, []() {
+        Logger::instance().clear();
+    });
+
+    layout->addWidget(m_outerSplitter, 1);
 
     // ── Allocate chart + table managers ──────────────────────────────────────
     m_chartManager = new ChartManager(chart, chartView, m_yScaleCombo, m_cacheManager, this);
@@ -520,6 +574,8 @@ void MainWindow::onError(const QString &symbol, const QString &message)
 {
     QApplication::beep();
     m_statusLabel->setText("Error: " + message);
+    const QString logMsg = symbol.isEmpty() ? message : symbol + ": " + message;
+    Logger::instance().append(logMsg);
     if (!symbol.isEmpty()) {
         m_groupManager->symbolErrors().insert(symbol);
         m_groupManager->updateTreeItemIcon(symbol);
@@ -632,6 +688,8 @@ void MainWindow::loadSettings()
 
     if (s.contains("mainSplitterState"))
         m_splitter->restoreState(s.value("mainSplitterState").toByteArray());
+    if (s.contains("outerSplitterState"))
+        m_outerSplitter->restoreState(s.value("outerSplitterState").toByteArray());
 
     // setActiveProvider clears m_cache but immediately reloads it from QSettings,
     // so the cache is populated before loadGroups() runs below.
@@ -658,8 +716,9 @@ void MainWindow::loadSettings()
 void MainWindow::saveSettings()
 {
     QSettings s("StockChart", "StockChart");
-    s.setValue("activeProvider",     m_activeProviderId);
-    s.setValue("mainSplitterState",  m_splitter->saveState());
+    s.setValue("activeProvider",        m_activeProviderId);
+    s.setValue("mainSplitterState",     m_splitter->saveState());
+    s.setValue("outerSplitterState",    m_outerSplitter->saveState());
     if (m_groupManager)
         s.setValue("selectedSymbols", m_groupManager->selectedSymbols());
     m_cacheManager->saveCache();

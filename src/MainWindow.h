@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QList>
 #include <QActionGroup>
+#include <QTextEdit>
 #include "StockDataProvider.h"
 #include "StockCacheManager.h"
 #include "StockGroupManager.h"
@@ -61,6 +62,8 @@ private:
     QButtonGroup  *m_chartRangeBtnGroup   = nullptr;
     QComboBox     *m_yScaleCombo          = nullptr;
     QActionGroup  *m_providerActionGroup  = nullptr;
+    QSplitter     *m_outerSplitter        = nullptr; // chart+table (top) | log pane (bottom)
+    QTextEdit     *m_logEdit              = nullptr;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     StockCacheManager *m_cacheManager  = nullptr;

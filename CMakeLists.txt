@@ -31,6 +31,7 @@ set(SOURCES
     src/TableManager.cpp
     src/CsvPorter.cpp
     src/CrashHandler.cpp
+    src/Logger.cpp
 )
 
 set(HEADERS
@@ -49,6 +50,7 @@ set(HEADERS
     src/TableManager.h
     src/CsvPorter.h
     src/CrashHandler.h
+    src/Logger.h
 )
 
 option(BUILD_AS_BUNDLE "Build as a macOS App Bundle" ON)
