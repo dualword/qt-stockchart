@@ -12,6 +12,7 @@
 #include <QTextEdit>
 #include <QCheckBox>
 #include <QSet>
+#include <QStackedWidget>
 #include "StockDataProvider.h"
 #include "StockCacheManager.h"
 #include "StockGroupManager.h"
@@ -19,6 +20,7 @@
 #include "ChartManager.h"
 #include "TableManager.h"
 #include "CsvPorter.h"
+#include "WebBrowserWidget.h"
 
 class QChart;
 class QChartView;
@@ -42,6 +44,7 @@ private slots:
     void openSettings();
     void showHelp();
     void onLogToggle();
+    void onBrowserToggle();
 
 private:
     void setupUI();
@@ -68,8 +71,12 @@ private:
     QSplitter     *m_outerSplitter        = nullptr; // chart+table (top) | log pane (bottom)
     QTextEdit     *m_logEdit              = nullptr;
     QCheckBox     *m_autoRefreshCheck     = nullptr;
-    QToolButton   *m_logToggleBtn         = nullptr;
-    bool           m_logExpanded          = true;
+    QToolButton      *m_logToggleBtn         = nullptr;
+    bool              m_logExpanded          = true;
+    QStackedWidget   *m_contentStack         = nullptr;
+    WebBrowserWidget *m_webBrowser           = nullptr;
+    QToolButton      *m_browserBtn           = nullptr;
+    QToolButton      *m_gearBtn              = nullptr;
 
     // ── State ─────────────────────────────────────────────────────────────────
     QSet<QString>  m_inFlightSymbols; // symbols with an active network request

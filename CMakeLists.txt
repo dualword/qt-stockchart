@@ -12,7 +12,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Charts Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Charts Network WebEngineWidgets)
 
 set(SOURCES
     src/main.cpp
@@ -32,6 +32,9 @@ set(SOURCES
     src/CsvPorter.cpp
     src/CrashHandler.cpp
     src/Logger.cpp
+    src/WebBrowserWidget.cpp
+    src/RequestInterceptor.cpp
+    src/AdBlockDialog.cpp
 )
 
 set(HEADERS
@@ -51,6 +54,9 @@ set(HEADERS
     src/CsvPorter.h
     src/CrashHandler.h
     src/Logger.h
+    src/WebBrowserWidget.h
+    src/RequestInterceptor.h
+    src/AdBlockDialog.h
 )
 
 option(BUILD_AS_BUNDLE "Build as a macOS App Bundle" ON)
@@ -81,6 +87,7 @@ target_link_libraries(StockChart PRIVATE
     Qt6::Widgets
     Qt6::Charts
     Qt6::Network
+    Qt6::WebEngineWidgets
 )
 
 # Windows: DbgHelp for stack walking in the crash handler

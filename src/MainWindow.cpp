@@ -31,6 +31,7 @@
 #include <QTimer>
 #include <QApplication>
 #include <QAbstractButton>
+#include <QStackedWidget>
 
 // ── Construction ──────────────────────────────────────────────────────────────
 
@@ -275,6 +276,29 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     tbLayout->addWidget(new QLabel("Y:"));
     tbLayout->addWidget(m_yScaleCombo);
 
+    auto *sep3 = new QFrame(toolbar);
+    sep3->setFrameShape(QFrame::VLine);
+    sep3->setFrameShadow(QFrame::Sunken);
+    tbLayout->addWidget(sep3);
+
+    m_browserBtn = new QToolButton(toolbar);
+    m_browserBtn->setText("\xF0\x9F\x8C\x90"); // 🌐 globe emoji
+    m_browserBtn->setToolTip("Open financial website browser");
+    m_browserBtn->setCheckable(true);
+    m_browserBtn->setFixedWidth(28);
+    connect(m_browserBtn, &QToolButton::clicked, this, &MainWindow::onBrowserToggle);
+    tbLayout->addWidget(m_browserBtn);
+
+    m_gearBtn = new QToolButton(toolbar);
+    m_gearBtn->setText("\xE2\x9A\x99"); // ⚙ gear
+    m_gearBtn->setToolTip("Domain filter / Ad blocker");
+    m_gearBtn->setFixedWidth(24);
+    m_gearBtn->setVisible(false); // only shown in browser mode
+    connect(m_gearBtn, &QToolButton::clicked, this, [this]() {
+        m_webBrowser->openAdBlockDialog();
+    });
+    tbLayout->addWidget(m_gearBtn);
+
     tbLayout->addStretch();
 
     auto *helpBtn = new QToolButton(toolbar);
@@ -323,10 +347,17 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     // margins. Without this override it grows over time and locks the window at a large minimum.
     chart->setMinimumSize(QSizeF(1, 1));
 
-    auto *chartView = new QChartView(chart, vertSplitter);
+    auto *chartView = new QChartView(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
     chartView->viewport()->installEventFilter(this);
     chartView->setMinimumSize(0, 0);
+
+    m_webBrowser = new WebBrowserWidget();
+
+    m_contentStack = new QStackedWidget(vertSplitter);
+    m_contentStack->addWidget(chartView);   // index 0 — chart
+    m_contentStack->addWidget(m_webBrowser); // index 1 — browser
+    m_contentStack->setCurrentIndex(0);
 
     auto *stockTable = new QTableWidget(vertSplitter);
     stockTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -334,7 +365,7 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     stockTable->setSelectionMode(QAbstractItemView::SingleSelection);
     stockTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     stockTable->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    vertSplitter->addWidget(chartView);
+    vertSplitter->addWidget(m_contentStack);
     vertSplitter->addWidget(stockTable);
     stockTable->setMinimumHeight(0);
 
@@ -427,6 +458,19 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
             m_tableManager, &TableManager::onSplitterMoved);
 
     // ApiCallTracker is created in loadSettings() once the left panel layout is accessible.
+}
+
+void MainWindow::onBrowserToggle()
+{
+    const bool showBrowser = m_browserBtn->isChecked();
+    m_contentStack->setCurrentIndex(showBrowser ? 1 : 0);
+    m_gearBtn->setVisible(showBrowser);
+
+    if (showBrowser) {
+        const QStringList sel = m_groupManager->selectedSymbols();
+        if (!sel.isEmpty())
+            m_webBrowser->setSymbol(sel.first());
+    }
 }
 
 void MainWindow::onLogToggle()
@@ -598,6 +642,9 @@ void MainWindow::onStockSelectionChanged()
     m_chartManager->updateChart(selected);
     m_tableManager->setSeriesColors(m_chartManager->seriesColors());
     m_tableManager->refresh(selected, m_chartManager->clickedDate());
+
+    if (m_contentStack && m_contentStack->currentIndex() == 1)
+        m_webBrowser->setSymbol(selected.first());
 
     int ready = 0;
     for (const QString &sym : selected) if (m_cacheManager->cache().contains(sym)) ++ready;
@@ -836,6 +883,7 @@ void MainWindow::loadSettings()
 
     // Build CSV porter now that group manager is ready
     m_csvPorter = new CsvPorter(m_stockTree, m_groupManager, this);
+    if (m_webBrowser) m_webBrowser->loadBlacklist();
 }
 
 void MainWindow::saveSettings()
@@ -851,6 +899,7 @@ void MainWindow::saveSettings()
         s.setValue("selectedSymbols", m_groupManager->selectedSymbols());
     m_cacheManager->saveCache();
     if (m_tableManager) m_tableManager->saveSettings();
+    if (m_webBrowser)   m_webBrowser->saveBlacklist();
     for (StockDataProvider *p : m_providers) {
         s.beginGroup(p->id());
         for (const auto &field : p->credentialFields())
