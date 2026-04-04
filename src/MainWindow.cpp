@@ -883,7 +883,7 @@ void MainWindow::loadSettings()
 
     // Build CSV porter now that group manager is ready
     m_csvPorter = new CsvPorter(m_stockTree, m_groupManager, this);
-    if (m_webBrowser) m_webBrowser->loadBlacklist();
+    if (m_webBrowser) m_webBrowser->loadBlacklist(s);
 }
 
 void MainWindow::saveSettings()
@@ -899,7 +899,7 @@ void MainWindow::saveSettings()
         s.setValue("selectedSymbols", m_groupManager->selectedSymbols());
     m_cacheManager->saveCache();
     if (m_tableManager) m_tableManager->saveSettings();
-    if (m_webBrowser)   m_webBrowser->saveBlacklist();
+    if (m_webBrowser)   m_webBrowser->saveBlacklist(s);
     for (StockDataProvider *p : m_providers) {
         s.beginGroup(p->id());
         for (const auto &field : p->credentialFields())

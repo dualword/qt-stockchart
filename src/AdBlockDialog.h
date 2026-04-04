@@ -13,9 +13,13 @@ class AdBlockDialog : public QDialog
 public:
     explicit AdBlockDialog(RequestInterceptor *interceptor, QWidget *parent = nullptr);
 
+signals:
+    void reloadRequested();
+
 private slots:
     void onAdd();
     void onRemove();
+    void onClearActive();
     void refreshLists();
 
 private:

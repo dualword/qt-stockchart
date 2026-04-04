@@ -7,6 +7,7 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QPushButton>
+#include <QToolButton>
 #include <QTimer>
 #include <QHeaderView>
 
@@ -33,11 +34,34 @@ AdBlockDialog::AdBlockDialog(RequestInterceptor *interceptor, QWidget *parent)
     auto *listsRow = new QHBoxLayout();
     listsRow->setSpacing(6);
 
-    // Left: active domains
+    // Left: active domains list + clear/reload buttons below it
+    auto *leftCol = new QVBoxLayout();
+    leftCol->setSpacing(3);
+
     m_activeList = new QListWidget(this);
     m_activeList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_activeList->setSortingEnabled(true);
-    listsRow->addWidget(m_activeList, 1);
+    leftCol->addWidget(m_activeList, 1);
+
+    auto *leftBtnRow = new QHBoxLayout();
+    leftBtnRow->setSpacing(4);
+
+    auto *clearBtn = new QToolButton(this);
+    clearBtn->setText("\xF0\x9F\x97\x91");  // 🗑 wastebasket
+    clearBtn->setToolTip("Clear the active domain list");
+    clearBtn->setAutoRaise(true);
+    leftBtnRow->addWidget(clearBtn);
+
+    auto *reloadBtn = new QToolButton(this);
+    reloadBtn->setText("\xF0\x9F\x94\x84"); // 🔄 reload arrows
+    reloadBtn->setToolTip("Reload the current web page");
+    reloadBtn->setAutoRaise(true);
+    leftBtnRow->addWidget(reloadBtn);
+
+    leftBtnRow->addStretch();
+    leftCol->addLayout(leftBtnRow);
+
+    listsRow->addLayout(leftCol, 1);
 
     // Centre: + / - buttons
     auto *btnCol = new QVBoxLayout();
@@ -82,6 +106,8 @@ AdBlockDialog::AdBlockDialog(RequestInterceptor *interceptor, QWidget *parent)
     // ── Connections ──────────────────────────────────────────────────────────
     connect(m_addBtn,    &QPushButton::clicked, this, &AdBlockDialog::onAdd);
     connect(m_removeBtn, &QPushButton::clicked, this, &AdBlockDialog::onRemove);
+    connect(clearBtn,    &QToolButton::clicked, this, &AdBlockDialog::onClearActive);
+    connect(reloadBtn,   &QToolButton::clicked, this, &AdBlockDialog::reloadRequested);
 
     m_refreshTimer = new QTimer(this);
     connect(m_refreshTimer, &QTimer::timeout, this, &AdBlockDialog::refreshLists);
@@ -118,6 +144,12 @@ void AdBlockDialog::onRemove()
 
     m_interceptor->removeDomains(domains);
     refreshBlacklist();
+}
+
+void AdBlockDialog::onClearActive()
+{
+    m_interceptor->clearTracking();
+    m_activeList->clear();
 }
 
 void AdBlockDialog::refreshLists()

@@ -4,6 +4,7 @@
 #include <QPointer>
 #include <QString>
 #include <QList>
+#include <QSettings>
 #include "AdBlockDialog.h"
 
 class QWebEngineView;
@@ -19,9 +20,10 @@ public:
     void setSymbol(const QString &symbol);
     void openAdBlockDialog();
 
-    // Called from MainWindow::saveSettings / loadSettings.
-    void saveBlacklist() const;
-    void loadBlacklist();
+    // Use the caller's QSettings object so there is never a nested instance
+    // that can be overwritten when the outer instance syncs on destruction.
+    void saveBlacklist(QSettings &s) const;
+    void loadBlacklist(QSettings &s);
 
 private slots:
     void onTabChanged(int index);

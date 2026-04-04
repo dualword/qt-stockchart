@@ -86,24 +86,24 @@ void WebBrowserWidget::openAdBlockDialog()
         m_adBlockDialog = new AdBlockDialog(m_interceptor, window());
         m_adBlockDialog->setAttribute(Qt::WA_DeleteOnClose);
         connect(m_adBlockDialog, &QDialog::finished, this, [this]() {
-            saveBlacklist();
+            QSettings s("StockChart", "StockChart");
+            saveBlacklist(s);
         });
+        connect(m_adBlockDialog, &AdBlockDialog::reloadRequested, this, [this]() { m_webView->reload(); });
     }
     m_adBlockDialog->show();
     m_adBlockDialog->raise();
     m_adBlockDialog->activateWindow();
 }
 
-void WebBrowserWidget::saveBlacklist() const
+void WebBrowserWidget::saveBlacklist(QSettings &s) const
 {
-    QSettings s("StockChart", "StockChart");
     const QSet<QString> bl = m_interceptor->blacklist();
     s.setValue("adBlockBlacklist", QStringList(bl.cbegin(), bl.cend()));
 }
 
-void WebBrowserWidget::loadBlacklist()
+void WebBrowserWidget::loadBlacklist(QSettings &s)
 {
-    QSettings s("StockChart", "StockChart");
     const QStringList list = s.value("adBlockBlacklist").toStringList();
     m_interceptor->setBlacklist(QSet<QString>(list.cbegin(), list.cend()));
 }
