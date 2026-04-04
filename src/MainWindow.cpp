@@ -34,6 +34,9 @@
 #include <QApplication>
 #include <QAbstractButton>
 #include <QStackedWidget>
+#include <QListWidget>
+#include <QPixmap>
+#include <QDialogButtonBox>
 
 // ── Construction ──────────────────────────────────────────────────────────────
 
@@ -200,6 +203,15 @@ void MainWindow::setupUI()
             m_groupManager, &StockGroupManager::onTreeContextMenu);
     connect(m_groupManager, &StockGroupManager::forceReloadRequested,
             this, &MainWindow::onForceReload);
+    connect(m_groupManager, &StockGroupManager::stockDetailsChanged,
+            this, [this](const QString &) {
+        const QStringList sel = m_groupManager->selectedSymbols();
+        if (!sel.isEmpty()) {
+            refreshChart(sel);
+            m_tableManager->setSeriesColors(m_chartManager->seriesColors());
+            m_tableManager->refresh(sel, m_chartManager->clickedDate());
+        }
+    });
     connect(m_stockTree->header(), &QHeaderView::sectionClicked,
             this, [this](int col) {
                 if (col == 2) m_groupManager->sortBySymbol();
@@ -263,7 +275,7 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
         AppSettings::instance().setLastChartRangeDays(days);
         m_chartManager->setRangeDays(days);
         const QStringList sel = m_groupManager->selectedSymbols();
-        m_chartManager->updateChart(sel);
+        refreshChart(sel);
         m_tableManager->setActivePeriodDays(days);
         m_tableManager->setSeriesColors(m_chartManager->seriesColors());
         m_tableManager->refresh(sel, m_chartManager->clickedDate());
@@ -273,7 +285,7 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     m_yScaleCombo->addItems({ "Auto", "+/- 10%", "+/- 20%", "+/- 30%", "+/- 40%", "+/- 50%" });
     connect(m_yScaleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
-        m_chartManager->updateChart(m_groupManager->selectedSymbols());
+        refreshChart(m_groupManager->selectedSymbols());
     });
 
     tbLayout->addSpacing(10);
@@ -620,7 +632,7 @@ void MainWindow::onStockSelectionChanged()
     const QStringList selected = m_groupManager->selectedSymbols();
 
     if (selected.isEmpty()) {
-        m_chartManager->updateChart({});
+        refreshChart({});
         m_tableManager->refresh({}, {});
         m_statusLabel->setText("No stocks selected.");
         return;
@@ -643,7 +655,7 @@ void MainWindow::onStockSelectionChanged()
         }
     }
 
-    m_chartManager->updateChart(selected);
+    refreshChart(selected);
     m_tableManager->setSeriesColors(m_chartManager->seriesColors());
     m_tableManager->refresh(selected, m_chartManager->clickedDate());
 
@@ -709,7 +721,7 @@ void MainWindow::onDataReady(const QString &symbol, const QVector<StockDataPoint
         }
     }
 
-    m_chartManager->updateChart(selected);
+    refreshChart(selected);
     m_tableManager->setSeriesColors(m_chartManager->seriesColors());
     m_tableManager->refresh(selected, m_chartManager->clickedDate());
 
@@ -750,7 +762,7 @@ void MainWindow::onError(const QString &symbol, const QString &message)
     }
     const QStringList selected = m_groupManager->selectedSymbols();
     if (!selected.isEmpty()) {
-        m_chartManager->updateChart(selected);
+        refreshChart(selected);
         m_tableManager->setSeriesColors(m_chartManager->seriesColors());
         m_tableManager->refresh(selected, m_chartManager->clickedDate());
     }
@@ -765,6 +777,18 @@ void MainWindow::onSymbolTypeReady(const QString &symbol, SymbolType type)
 }
 
 // ── Period buttons ────────────────────────────────────────────────────────────
+
+void MainWindow::refreshChart(const QStringList &symbols)
+{
+    QMap<QString, ChartManager::PurchaseInfo> purInfo;
+    for (const QString &sym : symbols) {
+        auto [price, date] = m_groupManager->purchaseInfoForSymbol(sym);
+        if (price > 0.0 || date.isValid())
+            purInfo[sym] = {price, date};
+    }
+    m_chartManager->setPurchaseInfo(purInfo);
+    m_chartManager->updateChart(symbols);
+}
 
 void MainWindow::rebuildPeriodButtons(const QList<int> &periods)
 {
@@ -818,7 +842,7 @@ void MainWindow::rebuildPeriodButtons(const QList<int> &periods)
         m_chartManager->setRangeDays(selectedId);
         const QStringList sel = m_groupManager ? m_groupManager->selectedSymbols() : QStringList{};
         if (!sel.isEmpty())
-            m_chartManager->updateChart(sel);
+            refreshChart(sel);
     }
     if (selectedId >= 0 && m_tableManager)
         m_tableManager->setActivePeriodDays(selectedId);
@@ -944,84 +968,163 @@ void MainWindow::showHelp()
 {
     QDialog dlg(this);
     dlg.setWindowTitle("About StockChart");
-    dlg.setMinimumWidth(680);
+    dlg.setMinimumSize(700, 480);
 
-    auto *layout = new QVBoxLayout(&dlg);
-    layout->setSpacing(12);
+    auto *outerLayout = new QVBoxLayout(&dlg);
+    outerLayout->setSpacing(0);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto *aboutFrame = new QFrame(&dlg);
-    aboutFrame->setFrameShape(QFrame::StyledPanel);
-    auto *aboutLayout = new QVBoxLayout(aboutFrame);
+    // ── Content row: left nav + right stack ────────────────────────────────
+    auto *contentWidget = new QWidget(&dlg);
+    auto *contentLayout = new QHBoxLayout(contentWidget);
+    contentLayout->setSpacing(0);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto *appName = new QLabel("<b style='font-size:14pt'>StockChart</b>", aboutFrame);
-    appName->setAlignment(Qt::AlignCenter);
-    auto *version = new QLabel("Version 1.0", aboutFrame);
-    version->setAlignment(Qt::AlignCenter);
-    auto *desc = new QLabel(
-        "A Qt6 desktop application for viewing and comparing historical stock performance.\n"
-        "Supports multiple data providers, normalized % change charting,\n"
-        "and a configurable performance table.", aboutFrame);
-    desc->setAlignment(Qt::AlignCenter);
-    desc->setWordWrap(true);
-    auto *author = new QLabel("Author: Dennis Lang", aboutFrame);
-    author->setAlignment(Qt::AlignCenter);
+    // ── Left navigation list ────────────────────────────────────────────────
+    auto *navList = new QListWidget(contentWidget);
+    navList->setFixedWidth(160);
+    navList->setFrameShape(QFrame::NoFrame);
+    navList->setStyleSheet(
+        "QListWidget {"
+        "  background: #f5f5f5;"
+        "  border: none;"
+        "  border-right: 1px solid #e0e0e0;"
+        "}"
+        "QListWidget::item {"
+        "  height: 38px;"
+        "  padding-left: 14px;"
+        "  font-size: 13px;"
+        "}"
+        "QListWidget::item:selected {"
+        "  background: #dce8fb;"
+        "  color: #1a73e8;"
+        "  font-weight: bold;"
+        "  border-left: 3px solid #1a73e8;"
+        "}");
+    navList->addItems({ "About", "Data / Files / Paths", "Licenses" });
 
-    aboutLayout->addWidget(appName);
-    aboutLayout->addWidget(version);
-    aboutLayout->addWidget(desc);
-    aboutLayout->addWidget(author);
-    layout->addWidget(aboutFrame);
+    // ── Right stacked pages ─────────────────────────────────────────────────
+    auto *stack = new QStackedWidget(contentWidget);
 
-    layout->addWidget(new QLabel("<b>Stock Market API Providers</b>", &dlg));
+    // Page 0 ── About ────────────────────────────────────────────────────────
+    {
+        auto *page = new QWidget();
+        auto *vl = new QVBoxLayout(page);
+        vl->setContentsMargins(20, 20, 20, 20);
+        vl->setSpacing(10);
 
-    struct ProviderInfo { QString name, freeTier, limits, notes; };
-    const QList<ProviderInfo> providers = {
-        { "Alpha Vantage",  "Yes",           "25 req/day",             "Good historical data; slow on free tier" },
-        { "Finnhub",        "Yes",           "60 req/min",             "Real-time US quotes; solid free tier" },
-        { "Polygon.io",     "Yes (delayed)", "5 req/min",              "15-min delayed on free; real-time needs $29/mo" },
-        { "Twelve Data",    "Yes",           "800 req/day, 8 req/min", "Generous free tier; good historical data" },
-        { "Tiingo",         "Yes",           "500 req/hour",           "End-of-day historical; very good for casual use" },
-        { "Yahoo Finance",       "Yes (no key)",  "—",                      "Unofficial API; no key required but can break without warning" },
-        { "Fin. Modeling Prep",  "Yes",           "250 req/day",            "Full historical data; free API key required; reliable JSON API" },
-        { "Yahoo Finance (page)", "Yes (no key)",  "—",                      "Current price scraped from page HTML; no key; merges into cached historical data" },
-    };
+        auto *appName = new QLabel("<b style='font-size:15pt'>StockChart</b>", page);
+        appName->setAlignment(Qt::AlignCenter);
+        vl->addWidget(appName);
 
-    auto *table = new QTableWidget(providers.size(), 4, &dlg);
-    table->setHorizontalHeaderLabels({ "Provider", "Free Tier", "Limits", "Notes" });
-    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    table->setSelectionMode(QAbstractItemView::NoSelection);
-    table->verticalHeader()->setVisible(false);
-    table->horizontalHeader()->setStretchLastSection(true);
-    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    table->setShowGrid(true);
-    table->setAlternatingRowColors(true);
+        QPixmap logo(":/landenlabs.png");
+        auto *logoLabel = new QLabel(page);
+        if (!logo.isNull())
+            logoLabel->setPixmap(logo.scaled(80, 80, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        logoLabel->setAlignment(Qt::AlignCenter);
+        vl->addWidget(logoLabel);
 
-    const QStringList integrated = { "Alpha Vantage", "Finnhub", "Polygon.io", "Twelve Data", "Yahoo Finance", "Fin. Modeling Prep", "Yahoo Finance (page)" };
-    const QColor integratedBg(230, 245, 230);
+        auto *ghLink = new QLabel(
+            "<a href='https://github.com/landenlabs/qt-stockchart'>"
+            "https://github.com/landenlabs/qt-stockchart</a>", page);
+        ghLink->setAlignment(Qt::AlignCenter);
+        ghLink->setOpenExternalLinks(true);
+        vl->addWidget(ghLink);
 
-    for (int r = 0; r < providers.size(); ++r) {
-        const auto &p = providers[r];
-        const bool isIntegrated = integrated.contains(p.name);
-        const QList<QString> cells = { p.name, p.freeTier, p.limits, p.notes };
-        for (int c = 0; c < 4; ++c) {
-            auto *item = new QTableWidgetItem(cells[c]);
-            item->setFlags(Qt::ItemIsEnabled);
-            if (isIntegrated) item->setBackground(integratedBg);
-            table->setItem(r, c, item);
-        }
+        auto *desc = new QLabel(
+            "A Qt6 desktop application for viewing and comparing historical stock performance.\n"
+            "Supports multiple data providers, normalized % change charting,\n"
+            "and a configurable performance table.", page);
+        desc->setAlignment(Qt::AlignCenter);
+        desc->setWordWrap(true);
+        vl->addWidget(desc);
+
+        auto *ver = new QLabel(
+            QString("Version %1   Built: %2 %3").arg(kAppVersion, __DATE__, __TIME__), page);
+        ver->setAlignment(Qt::AlignCenter);
+        vl->addWidget(ver);
+
+        vl->addStretch();
+        stack->addWidget(page);
     }
-    table->resizeRowsToContents();
 
-    auto *legend = new QLabel("<i>Green rows are integrated in this application.</i>", &dlg);
-    legend->setAlignment(Qt::AlignRight);
-    layout->addWidget(table);
-    layout->addWidget(legend);
+    // Page 1 ── Data / Files / Paths ─────────────────────────────────────────
+    {
+        auto *page = new QWidget();
+        auto *vl = new QVBoxLayout(page);
+        vl->setContentsMargins(20, 20, 20, 20);
+        auto *placeholder = new QLabel("(No data paths configured)", page);
+        placeholder->setAlignment(Qt::AlignCenter);
+        placeholder->setStyleSheet("color: #888888;");
+        vl->addWidget(placeholder);
+        vl->addStretch();
+        stack->addWidget(page);
+    }
 
+    // Page 2 ── Licenses / Providers ─────────────────────────────────────────
+    {
+        auto *page = new QWidget();
+        auto *vl = new QVBoxLayout(page);
+        vl->setContentsMargins(20, 20, 20, 20);
+
+        auto *table = new QTableWidget(m_providers.size(), 3, page);
+        table->setHorizontalHeaderLabels({ "Provider", "API Key", "URL" });
+        table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        table->setSelectionMode(QAbstractItemView::NoSelection);
+        table->verticalHeader()->setVisible(false);
+        table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        table->horizontalHeader()->setStretchLastSection(true);
+        table->setShowGrid(true);
+        table->setAlternatingRowColors(true);
+
+        for (int r = 0; r < m_providers.size(); ++r) {
+            StockDataProvider *p = m_providers[r];
+
+            auto *nameItem = new QTableWidgetItem(p->displayName());
+            nameItem->setFlags(Qt::ItemIsEnabled);
+            table->setItem(r, 0, nameItem);
+
+            QString keyVal;
+            const auto fields = p->credentialFields();
+            if (!fields.isEmpty())
+                keyVal = p->credentials().value(fields.first().first);
+            auto *keyItem = new QTableWidgetItem(keyVal);
+            keyItem->setFlags(Qt::ItemIsEnabled);
+            table->setItem(r, 1, keyItem);
+
+            const QString url = p->signupUrl();
+            if (!url.isEmpty()) {
+                auto *urlLabel = new QLabel(
+                    QString("<a href='%1'>%1</a>").arg(url), page);
+                urlLabel->setOpenExternalLinks(true);
+                urlLabel->setContentsMargins(4, 0, 4, 0);
+                table->setCellWidget(r, 2, urlLabel);
+            } else {
+                auto *urlItem = new QTableWidgetItem(QString());
+                urlItem->setFlags(Qt::ItemIsEnabled);
+                table->setItem(r, 2, urlItem);
+            }
+        }
+        table->resizeRowsToContents();
+
+        vl->addWidget(table);
+        stack->addWidget(page);
+    }
+
+    contentLayout->addWidget(navList);
+    contentLayout->addWidget(stack, 1);
+    outerLayout->addWidget(contentWidget, 1);
+
+    // ── Close button ─────────────────────────────────────────────────────────
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, &dlg);
+    buttons->setContentsMargins(12, 4, 12, 8);
     connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::accept);
-    layout->addWidget(buttons);
+    outerLayout->addWidget(buttons);
+
+    QObject::connect(navList, &QListWidget::currentRowChanged,
+                     stack,   &QStackedWidget::setCurrentIndex);
+    navList->setCurrentRow(0);
 
     dlg.exec();
 }

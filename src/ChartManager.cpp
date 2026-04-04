@@ -32,6 +32,28 @@ ChartManager::ChartManager(QChart *chart, QChartView *chartView,
     m_zeroLine = new QGraphicsLineItem(m_chart);
     QPen zeroPen(Qt::darkGray, 1, Qt::DashLine);
     m_zeroLine->setPen(zeroPen);
+
+    // Purchase overlay items — created upfront so they never appear mid-render
+    m_purPriceLine = new QGraphicsLineItem(m_chart);
+    m_purPriceLine->setPen(QPen(QColor(210, 105, 30), 1, Qt::DashDotLine));
+    m_purPriceLine->setZValue(2);
+    m_purPriceLine->setVisible(false);
+
+    {
+        QFont f;
+        f.setPointSizeF(12.8);
+        m_purPriceLabel = new QGraphicsTextItem(m_chart);
+        m_purPriceLabel->setFont(f);
+        m_purPriceLabel->setDefaultTextColor(QColor(210, 105, 30));
+        m_purPriceLabel->setZValue(3);
+        m_purPriceLabel->setVisible(false);
+    }
+
+    m_purDateDot = new QGraphicsEllipseItem(0, 0, 10, 10, m_chart);
+    m_purDateDot->setPen(QPen(QColor(150, 70, 0), 1.5));
+    m_purDateDot->setBrush(QBrush(QColor(210, 105, 30)));
+    m_purDateDot->setZValue(5);
+    m_purDateDot->setVisible(false);
 }
 
 // ── Chart rendering ───────────────────────────────────────────────────────────
@@ -42,9 +64,10 @@ void ChartManager::updateChart(const QStringList &selectedSymbols)
     if (isUpdating) return;
     isUpdating = true;
 
-    m_showMinMax  = false;
-    m_singleStock = false;
-    m_basePrice   = 0.0;
+    m_showMinMax        = false;
+    m_singleStock       = false;
+    m_basePrice         = 0.0;
+    m_singleStockSymbol.clear();
     m_seriesColors.clear();
     for (auto *item : m_yAxisLabels) delete item;
     m_yAxisLabels.clear();
@@ -239,13 +262,14 @@ void ChartManager::updateChart(const QStringList &selectedSymbols)
                 }
             }
 
-            m_showMinMax = true;
-            m_singleStock   = true;
-            m_basePrice     = basePrice;
-            m_minPct        = singleMinPct;
-            m_maxPct        = singleMaxPct;
-            m_minPrice      = singleMinPrice;
-            m_maxPrice      = singleMaxPrice;
+            m_showMinMax        = true;
+            m_singleStock       = true;
+            m_basePrice         = basePrice;
+            m_singleStockSymbol = sym;
+            m_minPct            = singleMinPct;
+            m_maxPct            = singleMaxPct;
+            m_minPrice          = singleMinPrice;
+            m_maxPrice          = singleMaxPrice;
 
         } else {
             auto *series = new QLineSeries();
@@ -433,15 +457,115 @@ void ChartManager::updateMinMaxLines()
     drawLine(m_maxLine, m_maxLabel, m_maxPct, m_maxPrice, /*isMin=*/false);
 }
 
+void ChartManager::updatePurchaseOverlay()
+{
+    // Items are pre-created in the constructor; no lazy-init here.
+    // Reset geometry when hiding to prevent stale bounding rects from
+    // contributing to the scene rect and triggering layout expansion.
+    auto hidePriceLine = [&]() {
+        m_purPriceLine->setVisible(false);
+        m_purPriceLabel->setVisible(false);
+    };
+    auto hideDateDot = [&]() {
+        m_purDateDot->setPos(0, 0);
+        m_purDateDot->setVisible(false);
+    };
+
+    if (!m_singleStock || m_singleStockSymbol.isEmpty()
+            || !m_purchaseInfo.contains(m_singleStockSymbol)) {
+        hidePriceLine();
+        hideDateDot();
+        return;
+    }
+
+    const PurchaseInfo &info = m_purchaseInfo[m_singleStockSymbol];
+
+    const auto vertAxes = m_chart->axes(Qt::Vertical);
+    if (vertAxes.isEmpty()) { hidePriceLine(); hideDateDot(); return; }
+    auto *axisY = qobject_cast<QValueAxis*>(vertAxes.first());
+    if (!axisY) { hidePriceLine(); hideDateDot(); return; }
+
+    const QRectF plotRect = m_chart->plotArea();
+
+    // --- Purchase price horizontal line ---
+    if (info.price > 0.0 && m_basePrice > 0.0) {
+        const double pct = (info.price / m_basePrice - 1.0) * 100.0;
+        const QPointF pt = m_chart->mapToPosition(QPointF(0, pct));
+        // Always show; clamp to plot edges if the price is outside the current y range
+        const double lineY = std::clamp(pt.y(), plotRect.top(), plotRect.bottom());
+        m_purPriceLine->setLine(plotRect.left(), lineY, plotRect.right(), lineY);
+        m_purPriceLine->setVisible(true);
+
+        const QString sign = (pct >= 0.0) ? "+" : "";
+        const QString text = QString("Pur $%1  %2%3%")
+            .arg(info.price, 0, 'f', 2).arg(sign).arg(pct, 0, 'f', 1);
+        m_purPriceLabel->setPlainText(text);
+        const double lw = m_purPriceLabel->boundingRect().width();
+        const double lh = m_purPriceLabel->boundingRect().height();
+        const double lx = plotRect.left() + (plotRect.width() - lw) / 2.0;
+        // Position label above the line, clamped to stay within plot area
+        const double ly = std::clamp(lineY - lh - 2, plotRect.top(), plotRect.bottom() - lh);
+        m_purPriceLabel->setPos(lx, ly);
+        m_purPriceLabel->setVisible(true);
+    } else {
+        hidePriceLine();
+    }
+
+    // --- Purchase date dot ---
+    if (info.date.isValid() && m_basePrice > 0.0) {
+        const auto &data = m_cache->cache()[m_singleStockSymbol];
+        if (data.isEmpty()) { hideDateDot(); return; }
+
+        // Find data point closest to purchase date
+        const qint64 purMs = QDateTime(info.date, QTime(12, 0), QTimeZone::utc()).toMSecsSinceEpoch();
+        qint64 bestMs    = -1;
+        double bestPrice = 0.0;
+        qint64 bestDiff  = std::numeric_limits<qint64>::max();
+        for (const StockDataPoint &pt : data) {
+            qint64 diff = std::abs(pt.timestamp.toMSecsSinceEpoch() - purMs);
+            if (diff < bestDiff) {
+                bestDiff  = diff;
+                bestMs    = pt.timestamp.toMSecsSinceEpoch();
+                bestPrice = pt.price;
+            }
+        }
+
+        if (bestMs < 0 || bestPrice <= 0.0) { hideDateDot(); return; }
+
+        const double pct = (bestPrice / m_basePrice - 1.0) * 100.0;
+        const QPointF centre = m_chart->mapToPosition(QPointF(static_cast<double>(bestMs), pct));
+        constexpr double r = 5.0;
+        // Only show if the date is within the visible x range; clamp y to plot area so
+        // the dot remains visible even when the purchase price is outside the current y scale.
+        if (centre.x() < plotRect.left() || centre.x() > plotRect.right()) {
+            hideDateDot(); return;
+        }
+        const double dotY = std::clamp(centre.y(), plotRect.top() + r, plotRect.bottom() - r);
+        // rect is (0,0,10,10) in local coords; pos is top-left corner so centre aligns
+        m_purDateDot->setPos(centre.x() - r, dotY - r);
+        m_purDateDot->setVisible(true);
+    } else {
+        hideDateDot();
+    }
+}
+
 void ChartManager::updateCrosshair()
 {
+    // Guard against re-entrant calls: repositioning graphics items (especially
+    // QGraphicsTextItem) can cause QChart::plotAreaChanged to fire synchronously,
+    // which would call updateCrosshair again before the current call completes.
+    if (m_crosshairUpdating) return;
+    m_crosshairUpdating = true;
+
     updateZeroLine();
     updateMinorTicks();
     updateYAxisLabels();
     updateMinMaxLines();
+    updatePurchaseOverlay();
 
     if (m_clickedMsecs < 0 || m_chart->series().isEmpty()) {
         if (m_crosshairLine) m_crosshairLine->setVisible(false);
+        m_crosshairUpdating = false;
         return;
     }
 
@@ -458,6 +582,7 @@ void ChartManager::updateCrosshair()
     QPointF pt       = m_chart->mapToPosition(QPointF(static_cast<double>(m_clickedMsecs), 0.0));
     m_crosshairLine->setLine(pt.x(), plotArea.top(), pt.x(), plotArea.bottom());
     m_crosshairLine->setVisible(true);
+    m_crosshairUpdating = false;
 }
 
 void ChartManager::updateYAxisLabels()

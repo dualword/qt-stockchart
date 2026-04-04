@@ -2,5 +2,6 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <file>bg_graph.jpg</file>
+        <file>landenlabs.png</file>
     </qresource>
 </RCC>

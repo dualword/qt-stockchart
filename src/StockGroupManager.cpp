@@ -297,6 +297,7 @@ void StockGroupManager::onEditStockDetails(QTreeWidgetItem *item)
 
     QLineEdit *priceEdit = new QLineEdit(item->text(5), &dlg);
     QLineEdit *dateEdit  = new QLineEdit(item->text(6), &dlg);
+    dateEdit->setPlaceholderText("mm/dd/yyyy");
     form->addRow("Purchase Price:", priceEdit);
     form->addRow("Purchase Date:", dateEdit);
 
@@ -311,7 +312,29 @@ void StockGroupManager::onEditStockDetails(QTreeWidgetItem *item)
         item->setData(5, PurPriceRole, priceEdit->text().toDouble());
         item->setData(6, PurDateRole, dateEdit->text());
         saveGroups();
+        emit stockDetailsChanged(item->text(2));
     }
+}
+
+QPair<double, QDate> StockGroupManager::purchaseInfoForSymbol(const QString &symbol) const
+{
+    for (int i = 0; i < m_tree->topLevelItemCount(); ++i) {
+        auto *group = m_tree->topLevelItem(i);
+        for (int j = 0; j < group->childCount(); ++j) {
+            auto *child = group->child(j);
+            if (child->text(2) == symbol) {
+                double price = child->data(5, PurPriceRole).toDouble();
+                QDate  date;
+                const QString dateStr = child->data(6, PurDateRole).toString();
+                for (const QString &fmt : {"MM/dd/yyyy", "M/d/yyyy", "MM/d/yyyy", "M/dd/yyyy"}) {
+                    date = QDate::fromString(dateStr, fmt);
+                    if (date.isValid()) break;
+                }
+                return {price, date};
+            }
+        }
+    }
+    return {0.0, QDate()};
 }
 
 void StockGroupManager::onClearCache(QTreeWidgetItem *item)

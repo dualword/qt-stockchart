@@ -3,6 +3,8 @@
 #include <QTreeWidget>
 #include <QIcon>
 #include <QSet>
+#include <QDate>
+#include <QPair>
 #include "StockCacheManager.h"
 #include "StockDataProvider.h"
 
@@ -41,6 +43,9 @@ public:
     QStringList selectedSymbols() const;
     void selectSymbols(const QStringList &symbols);
 
+    // Purchase data (price=0 or invalid date means not set)
+    QPair<double, QDate> purchaseInfoForSymbol(const QString &symbol) const;
+
     // Error tracking (maintained here, but MainWindow sets errors on onError)
     QSet<QString> &symbolErrors()             { return m_symbolErrors; }
     const QSet<QString> &symbolErrors() const { return m_symbolErrors; }
@@ -52,6 +57,7 @@ public:
 
 signals:
     void forceReloadRequested(const QString &symbol);
+    void stockDetailsChanged(const QString &symbol); // emitted after Edit Details saves
 
 public slots:
     void onAddGroupClicked();

@@ -59,6 +59,7 @@ private:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
     void rebuildPeriodButtons(const QList<int> &periods);
+    void refreshChart(const QStringList &symbols);
 
     // ── Widgets ──────────────────────────────────────────────────────────────
     QSplitter     *m_splitter    = nullptr;

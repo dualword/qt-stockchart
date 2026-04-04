@@ -10,6 +10,7 @@ public:
 
     QString id() const override { return "polygon"; }
     QString displayName() const override { return "Polygon.io"; }
+    QString signupUrl() const override { return "https://polygon.io/dashboard/signup"; }
     QList<QPair<QString,QString>> credentialFields() const override;
 
     void fetchData(const QString &symbol, const QString &range = "3mo") override;

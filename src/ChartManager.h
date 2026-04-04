@@ -7,6 +7,7 @@
 #include <QChartView>
 #include <QColor>
 #include <QComboBox>
+#include <QGraphicsEllipseItem>
 #include <QGraphicsLineItem>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsTextItem>
@@ -47,6 +48,10 @@ public:
     // Series colors keyed by symbol (populated after updateChart)
     const QMap<QString, QColor> &seriesColors() const { return m_seriesColors; }
 
+    // Purchase overlay: set before calling updateChart to draw price line + date dot
+    struct PurchaseInfo { double price = 0.0; QDate date; };
+    void setPurchaseInfo(const QMap<QString, PurchaseInfo> &info) { m_purchaseInfo = info; }
+
 signals:
     void dateClicked(const QDate &date); // emitted after a chart click snaps to a data point
 
@@ -54,6 +59,7 @@ private:
     void onChartClicked(const QPointF &chartPos);
     void updateZeroLine();
     void updateMinMaxLines();
+    void updatePurchaseOverlay();
     void updateYAxisLabels();
     void updateMinorTicks();
 
@@ -71,7 +77,8 @@ private:
     QGraphicsPixmapItem *m_bgImageItem   = nullptr;
     QPixmap              m_bgPixmap;
 
-    int    m_chartRangeDays = 0;
+    int    m_chartRangeDays    = 0;
+    bool   m_crosshairUpdating = false;
     QMap<QString, QColor> m_seriesColors;
     qint64 m_clickedMsecs   = -1;
     QDate  m_clickedDate;
@@ -84,8 +91,15 @@ private:
     double m_maxPrice      = 0.0;
 
     // Single-stock custom y-axis labels
-    bool   m_singleStock = false;
-    double m_basePrice   = 0.0;
+    bool    m_singleStock = false;
+    double  m_basePrice   = 0.0;
+    QString m_singleStockSymbol;
     QVector<QGraphicsTextItem*> m_yAxisLabels;
     QGraphicsTextItem          *m_yAxisTitle = nullptr;
+
+    // Purchase overlay
+    QMap<QString, PurchaseInfo>  m_purchaseInfo;
+    QGraphicsLineItem    *m_purPriceLine  = nullptr;
+    QGraphicsTextItem    *m_purPriceLabel = nullptr;
+    QGraphicsEllipseItem *m_purDateDot   = nullptr;
 };

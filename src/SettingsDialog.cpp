@@ -7,16 +7,6 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 
-static QString signupUrl(const QString &id)
-{
-    if (id == "alphavantage") return "https://www.alphavantage.co/support/#api-key";
-    if (id == "finnhub")      return "https://finnhub.io/register";
-    if (id == "polygon")      return "https://polygon.io/dashboard/signup";
-    if (id == "twelvedata")   return "https://twelvedata.com/";
-    if (id == "fmp")          return "https://financialmodelingprep.com/developer/docs/";
-    return {};
-}
-
 static QString accountUrl(const QString &id)
 {
     if (id == "alphavantage") return "https://www.alphavantage.co/premium/";
@@ -84,7 +74,7 @@ SettingsDialog::SettingsDialog(const QList<StockDataProvider*> &providers,
             }
 
             // Sign-up link
-            QString url = signupUrl(p->id());
+            QString url = p->signupUrl();
             if (!url.isEmpty()) {
                 auto *link = new QLabel(
                     QString("<a href='%1'>Get a free key at %2</a>").arg(url, url), page);

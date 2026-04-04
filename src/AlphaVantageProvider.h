@@ -10,6 +10,7 @@ public:
 
     QString id() const override { return "alphavantage"; }
     QString displayName() const override { return "Alpha Vantage"; }
+    QString signupUrl() const override { return "https://www.alphavantage.co/support/#api-key"; }
     QList<QPair<QString,QString>> credentialFields() const override;
 
     void fetchData(const QString &symbol, const QString &range = "3mo") override;

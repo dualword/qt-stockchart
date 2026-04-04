@@ -106,4 +106,5 @@ qt_add_resources(StockChart "app_resources"
     FILES
         bg_graph.jpg
         web-pages.json
+        landenlabs.png
 )
