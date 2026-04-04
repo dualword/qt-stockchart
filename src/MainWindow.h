@@ -10,6 +10,8 @@
 #include <QList>
 #include <QActionGroup>
 #include <QTextEdit>
+#include <QCheckBox>
+#include <QSet>
 #include "StockDataProvider.h"
 #include "StockCacheManager.h"
 #include "StockGroupManager.h"
@@ -64,6 +66,10 @@ private:
     QActionGroup  *m_providerActionGroup  = nullptr;
     QSplitter     *m_outerSplitter        = nullptr; // chart+table (top) | log pane (bottom)
     QTextEdit     *m_logEdit              = nullptr;
+    QCheckBox     *m_autoRefreshCheck     = nullptr;
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    QSet<QString>  m_inFlightSymbols; // symbols with an active network request
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     StockCacheManager *m_cacheManager  = nullptr;

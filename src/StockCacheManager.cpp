@@ -188,7 +188,7 @@ QString StockCacheManager::ageString(const QString &sym) const
     const qint64 days = secs / 86400;
     const qint64 hrs  = secs / 3600;
     const qint64 mins = secs / 60;
-    if (days >= 1) return QString("%1d").arg(days);
+    if (days > 1) return QString("%1d").arg(days);
     if (hrs  >= 1) return QString("%1h").arg(hrs);
     return QString("%1m").arg(qMax(qint64(1), mins));
 }

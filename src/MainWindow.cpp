@@ -83,6 +83,35 @@ void MainWindow::setupUI()
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(2);
 
+    // ── Top controls (above tree) ────────────────────────────────────────────
+    auto *topControls = new QWidget(leftPanel);
+    auto *topLayout = new QHBoxLayout(topControls);
+    topLayout->setContentsMargins(4, 6, 4, 4);
+    topLayout->setSpacing(4);
+
+    auto *exportBtn = new QToolButton(topControls);
+    exportBtn->setText("⬇");
+    exportBtn->setAutoRaise(true);
+    exportBtn->setFixedSize(26, 24);
+    exportBtn->setToolTip("Export Stock groups to CSV file");
+
+    auto *importBtn = new QToolButton(topControls);
+    importBtn->setText("⬆");
+    importBtn->setAutoRaise(true);
+    importBtn->setFixedSize(26, 24);
+    importBtn->setToolTip("Import stocks and groups from CSV file");
+
+    m_autoRefreshCheck = new QCheckBox("Auto", topControls);
+    m_autoRefreshCheck->setChecked(true);
+    m_autoRefreshCheck->setToolTip("Automatically fetch data once a minute when market is open");
+
+    topLayout->addWidget(exportBtn);
+    topLayout->addWidget(importBtn);
+    topLayout->addWidget(m_autoRefreshCheck);
+    topLayout->addStretch();
+
+    leftLayout->addWidget(topControls);
+
     m_stockTree = new QTreeWidget(leftPanel);
 #ifdef Q_OS_MACOS
     m_stockTree->setStyle(QStyleFactory::create("Fusion"));
@@ -108,6 +137,21 @@ void MainWindow::setupUI()
     connect(m_stockTree, &QTreeWidget::itemSelectionChanged,
             this, &MainWindow::onStockSelectionChanged);
 
+    // Re-check freshness when an already-selected item is clicked (no selection
+    // change fires in that case, so itemSelectionChanged would be skipped).
+    connect(m_stockTree, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem *, int) {
+        StockDataProvider *p = activeProvider();
+        if (!p || !p->hasCredentials()) return;
+        for (const QString &sym : m_groupManager->selectedSymbols()) {
+            if (!m_cacheManager->isDataFresh(sym) && !m_inFlightSymbols.contains(sym)) {
+                m_inFlightSymbols.insert(sym);
+                m_apiTracker->incrementCallCount(p->id());
+                m_apiTracker->updatePanel(m_activeProviderId);
+                p->fetchData(sym, "3mo");
+            }
+        }
+    });
+
     auto *addGroupBtn = new QPushButton("+ Add Group", leftPanel);
 
     leftLayout->addWidget(m_stockTree, 1);
@@ -118,16 +162,17 @@ void MainWindow::setupUI()
     // m_groupManager must exist before setCurrentIndex(2) fires currentIndexChanged.
     m_groupManager = new StockGroupManager(m_stockTree, m_cacheManager, this, this);
 
-    // Every minute: refresh the Age column display and re-fetch any selected
-    // symbols whose cached data has gone stale since they were last loaded.
+    // Every minute: refresh Age column; auto-fetch stale data if checkbox is on.
     auto *ageTimer = new QTimer(this);
     connect(ageTimer, &QTimer::timeout, this, [this]() {
         m_groupManager->refreshAllStockCacheVisuals();
 
+        if (!m_autoRefreshCheck->isChecked()) return;
         StockDataProvider *p = activeProvider();
         if (!p || !p->hasCredentials()) return;
         for (const QString &sym : m_groupManager->selectedSymbols()) {
-            if (!m_cacheManager->isDataFresh(sym)) {
+            if (!m_cacheManager->isDataFresh(sym) && !m_inFlightSymbols.contains(sym)) {
+                m_inFlightSymbols.insert(sym);
                 m_apiTracker->incrementCallCount(p->id());
                 m_apiTracker->updatePanel(m_activeProviderId);
                 p->fetchData(sym, "3mo");
@@ -137,6 +182,12 @@ void MainWindow::setupUI()
     ageTimer->start(60 * 1000);
 
     connect(addGroupBtn, &QPushButton::clicked, m_groupManager, &StockGroupManager::onAddGroupClicked);
+    connect(exportBtn, &QPushButton::clicked, this, [this]() {
+        m_csvPorter->exportGroups(m_statusLabel);
+    });
+    connect(importBtn, &QPushButton::clicked, this, [this]() {
+        m_csvPorter->importGroups(m_statusLabel);
+    });
     connect(m_stockTree, &QTreeWidget::customContextMenuRequested,
             m_groupManager, &StockGroupManager::onTreeContextMenu);
     connect(m_groupManager, &StockGroupManager::forceReloadRequested,
@@ -513,7 +564,8 @@ void MainWindow::onStockSelectionChanged()
 
     QStringList loading;
     for (const QString &sym : selected) {
-        if (!m_cacheManager->isDataFresh(sym)) {
+        if (!m_cacheManager->isDataFresh(sym) && !m_inFlightSymbols.contains(sym)) {
+            m_inFlightSymbols.insert(sym);
             m_apiTracker->incrementCallCount(p->id());
             m_apiTracker->updatePanel(m_activeProviderId);
             p->fetchData(sym, "3mo");
@@ -538,6 +590,7 @@ void MainWindow::onStockSelectionChanged()
 
 void MainWindow::onDataReady(const QString &symbol, const QVector<StockDataPoint> &data)
 {
+    m_inFlightSymbols.remove(symbol);
     if (data.isEmpty()) return;
     auto &existing = m_cacheManager->cache()[symbol];
     if (existing.isEmpty()) {
@@ -585,6 +638,7 @@ void MainWindow::onForceReload(const QString &symbol)
         m_statusLabel->setText("API key not configured. Use Providers > Configure API Keys...");
         return;
     }
+    m_inFlightSymbols.insert(symbol);
     m_apiTracker->incrementCallCount(p->id());
     m_apiTracker->updatePanel(m_activeProviderId);
     p->fetchData(symbol, "3mo");
@@ -593,6 +647,7 @@ void MainWindow::onForceReload(const QString &symbol)
 
 void MainWindow::onError(const QString &symbol, const QString &message)
 {
+    m_inFlightSymbols.remove(symbol);
     QApplication::beep();
     m_statusLabel->setText("Error: " + message);
     const QString logMsg = symbol.isEmpty() ? message : symbol + ": " + message;
@@ -707,6 +762,8 @@ void MainWindow::loadSettings()
 
     m_tableManager->loadSettings();
 
+    m_autoRefreshCheck->setChecked(s.value("autoRefresh", true).toBool());
+
     if (s.contains("mainSplitterState"))
         m_splitter->restoreState(s.value("mainSplitterState").toByteArray());
     if (s.contains("outerSplitterState"))
@@ -737,6 +794,7 @@ void MainWindow::loadSettings()
 void MainWindow::saveSettings()
 {
     QSettings s("StockChart", "StockChart");
+    s.setValue("autoRefresh",           m_autoRefreshCheck->isChecked());
     s.setValue("activeProvider",        m_activeProviderId);
     s.setValue("mainSplitterState",     m_splitter->saveState());
     s.setValue("outerSplitterState",    m_outerSplitter->saveState());
