@@ -318,23 +318,36 @@ void StockGroupManager::onEditStockDetails(QTreeWidgetItem *item)
 
 QPair<double, QDate> StockGroupManager::purchaseInfoForSymbol(const QString &symbol) const
 {
+    // Search all groups: prefer the entry that has purchase data over an empty
+    // duplicate in another group (e.g. a stock listed in both "Favorites" and
+    // a portfolio group where only the portfolio entry has price/date set).
+    double bestPrice = 0.0;
+    QDate  bestDate;
+
     for (int i = 0; i < m_tree->topLevelItemCount(); ++i) {
         auto *group = m_tree->topLevelItem(i);
         for (int j = 0; j < group->childCount(); ++j) {
             auto *child = group->child(j);
-            if (child->text(2) == symbol) {
-                double price = child->data(5, PurPriceRole).toDouble();
-                QDate  date;
-                const QString dateStr = child->data(6, PurDateRole).toString();
-                for (const QString &fmt : {"MM/dd/yyyy", "M/d/yyyy", "MM/d/yyyy", "M/dd/yyyy"}) {
-                    date = QDate::fromString(dateStr, fmt);
-                    if (date.isValid()) break;
-                }
-                return {price, date};
+            if (child->text(2) != symbol) continue;
+
+            double price = child->data(5, PurPriceRole).toDouble();
+            QDate  date;
+            const QString dateStr = child->data(6, PurDateRole).toString();
+            for (const QString &fmt : {"MM/dd/yyyy", "M/d/yyyy", "MM/d/yyyy", "M/dd/yyyy"}) {
+                date = QDate::fromString(dateStr, fmt);
+                if (date.isValid()) break;
+            }
+
+            // Take this entry if it has more data than what we've seen so far
+            if ((price > 0.0 && bestPrice == 0.0) ||
+                (date.isValid() && !bestDate.isValid()) ||
+                (price > 0.0 && date.isValid())) {
+                bestPrice = price;
+                bestDate  = date;
             }
         }
     }
-    return {0.0, QDate()};
+    return {bestPrice, bestDate};
 }
 
 void StockGroupManager::onClearCache(QTreeWidgetItem *item)
