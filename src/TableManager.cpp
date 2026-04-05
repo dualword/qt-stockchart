@@ -271,14 +271,25 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
 
     // Color-swatch column header (narrow, no label)
     m_table->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
-    m_table->setHorizontalHeaderItem(nCols + 1, new QTableWidgetItem("Purchase"));
+
+    // Purchase column header: bold when in purPct mode (it's the reference)
+    {
+        auto *purchaseHdr = new QTableWidgetItem("Purchase");
+        if (m_purPctMode) {
+            QFont f = purchaseHdr->font();
+            f.setBold(true);
+            purchaseHdr->setFont(f);
+        }
+        m_table->setHorizontalHeaderItem(nCols + 1, purchaseHdr);
+    }
 
     // Period column headers (table col = c + 1)
+    // In purPct mode, no period column is the "active" reference — Purchase column is
     for (int c = 0; c < nPeriods; ++c) {
         const int days = m_periods[c];
         QString label = (days == 0) ? "Today" : QString("%1d").arg(days);
         auto *hdr = new QTableWidgetItem(label);
-        const bool isActive = (c == activeOffset);
+        const bool isActive = (c == activeOffset) && !m_purPctMode;
         if (isActive) {
             QFont f = hdr->font();
             f.setBold(true);
@@ -309,13 +320,20 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
         const bool hasCached = m_cache->cache().contains(sym) && !m_cache->cache()[sym].isEmpty();
 
         double basePrice = std::numeric_limits<double>::quiet_NaN();
-        if (hasCached && m_showPercentChange && nPeriods > 0)
-            basePrice = StockCacheManager::priceAt(m_cache->cache()[sym], colDate(activeOffset));
+        if (hasCached && m_showPercentChange && nPeriods > 0) {
+            if (m_purPctMode) {
+                const double pp = m_purchasePrices.value(sym, 0.0);
+                if (pp > 0.0) basePrice = pp;
+            } else {
+                basePrice = StockCacheManager::priceAt(m_cache->cache()[sym], colDate(activeOffset));
+            }
+        }
 
         // Period + click columns (loop index c → table column c + 1)
         for (int c = 0; c < nCols; ++c) {
             const int tableCol   = c + 1;
-            const bool isActive  = (c == activeOffset) && (c < nPeriods);
+            // In purPct mode the purchase column is the reference; no period col is "active"
+            const bool isActive  = (c == activeOffset) && (c < nPeriods) && !m_purPctMode;
             QTableWidgetItem *cell;
 
             if (!hasCached) {
@@ -353,12 +371,14 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
             m_table->setItem(r, tableCol, cell);
         }
 
-        // Purchase price column (always last)
+        // Purchase price column (always last); highlighted as reference in purPct mode
         const double purPrice = m_purchasePrices.value(sym, 0.0);
         auto *purCell = new QTableWidgetItem(purPrice > 0
             ? QString("$%1").arg(purPrice, 0, 'f', 2) : QString());
         purCell->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         purCell->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        if (m_purPctMode && m_showPercentChange)
+            purCell->setBackground(refBg);
         m_table->setItem(r, nCols + 1, purCell);
     }
 }

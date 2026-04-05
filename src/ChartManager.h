@@ -52,6 +52,9 @@ public:
     struct PurchaseInfo { double price = 0.0; QDate date; };
     void setPurchaseInfo(const QMap<QString, PurchaseInfo> &info) { m_purchaseInfo = info; }
 
+    // When true, normalize the chart to the purchase price instead of the first in-range price
+    void setPurPctMode(bool v) { m_purPctMode = v; }
+
 signals:
     void dateClicked(const QDate &date); // emitted after a chart click snaps to a data point
 
@@ -98,6 +101,7 @@ private:
     QGraphicsTextItem          *m_yAxisTitle = nullptr;
 
     // Purchase overlay
+    bool                         m_purPctMode   = false;
     QMap<QString, PurchaseInfo>  m_purchaseInfo;
     QGraphicsLineItem    *m_purPriceLine  = nullptr;
     QGraphicsTextItem    *m_purPriceLabel = nullptr;

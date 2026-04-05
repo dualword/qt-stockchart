@@ -260,8 +260,16 @@ void MainWindow::setupUI()
                 if (p > 0) purPrices[sym] = p;
             }
             m_tableManager->setPurchasePrices(purPrices);
-            if (m_purPctBtn)
-                m_purPctBtn->setVisible(sel.size() == 1 && purPrices.size() == 1);
+            if (m_purPctBtn) {
+                const bool shouldShow = (sel.size() == 1 && purPrices.size() == 1);
+                if (!shouldShow && m_purPctBtn->isChecked()) {
+                    QSignalBlocker blocker(m_purPctBtn);
+                    m_purPctBtn->setChecked(false);
+                    m_chartManager->setPurPctMode(false);
+                    m_tableManager->setPurPctMode(false);
+                }
+                m_purPctBtn->setVisible(shouldShow);
+            }
             refreshChart(sel);
             m_tableManager->setSeriesColors(m_chartManager->seriesColors());
             m_tableManager->refresh(sel, m_chartManager->clickedDate());
@@ -306,7 +314,7 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
 
     // Y scale — first on the left
     m_yScaleCombo = new QComboBox(toolbar);
-    m_yScaleCombo->addItems({ "none", "10%", "20%", "30%", "40%", "50%" });
+    m_yScaleCombo->addItems({ "auto", "10%", "20%", "30%", "40%", "50%" });
     connect(m_yScaleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
         refreshChart(m_groupManager->selectedSymbols());
@@ -548,6 +556,15 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     connect(tableToggleBtn, &QToolButton::clicked, m_tableManager, &TableManager::onToggle);
     connect(displayModeBtn, &QPushButton::toggled, m_tableManager, &TableManager::onToggleDisplayMode);
 
+    connect(m_purPctBtn, &QToolButton::toggled, this, [this](bool checked) {
+        m_chartManager->setPurPctMode(checked);
+        m_tableManager->setPurPctMode(checked);
+        const QStringList sel = m_groupManager->selectedSymbols();
+        refreshChart(sel);
+        m_tableManager->setSeriesColors(m_chartManager->seriesColors());
+        m_tableManager->refresh(sel, m_chartManager->clickedDate());
+    });
+
     // Save table height on splitter drag
     connect(vertSplitter, &QSplitter::splitterMoved,
             m_tableManager, &TableManager::onSplitterMoved);
@@ -742,8 +759,17 @@ void MainWindow::onStockSelectionChanged()
             if (p > 0) purPrices[sym] = p;
         }
         m_tableManager->setPurchasePrices(purPrices);
-        if (m_purPctBtn)
-            m_purPctBtn->setVisible(selected.size() == 1 && purPrices.size() == 1);
+        if (m_purPctBtn) {
+            const bool shouldShow = (selected.size() == 1 && purPrices.size() == 1);
+            if (!shouldShow && m_purPctBtn->isChecked()) {
+                // Reset mode without triggering a redundant refresh via toggled signal
+                QSignalBlocker blocker(m_purPctBtn);
+                m_purPctBtn->setChecked(false);
+                m_chartManager->setPurPctMode(false);
+                m_tableManager->setPurPctMode(false);
+            }
+            m_purPctBtn->setVisible(shouldShow);
+        }
     }
 
     refreshChart(selected);

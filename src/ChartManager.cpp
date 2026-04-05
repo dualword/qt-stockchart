@@ -121,10 +121,14 @@ void ChartManager::updateChart(const QStringList &selectedSymbols)
         const auto &data = m_cache->cache()[sym];
 
         double basePrice = std::numeric_limits<double>::quiet_NaN();
-        for (const StockDataPoint &pt : data) {
-            if (!rangeStart.isValid() || pt.timestamp >= rangeStart) {
-                basePrice = pt.price;
-                break;
+        if (m_purPctMode && m_purchaseInfo.contains(sym) && m_purchaseInfo[sym].price > 0.0) {
+            basePrice = m_purchaseInfo[sym].price;
+        } else {
+            for (const StockDataPoint &pt : data) {
+                if (!rangeStart.isValid() || pt.timestamp >= rangeStart) {
+                    basePrice = pt.price;
+                    break;
+                }
             }
         }
         if (std::isnan(basePrice) || basePrice == 0.0) continue;

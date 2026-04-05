@@ -32,6 +32,7 @@ public:
     void setActivePeriodDays(int days) { m_activePeriodDays = days; }
     void setSeriesColors(const QMap<QString, QColor> &colors) { m_seriesColors = colors; }
     void setPurchasePrices(const QMap<QString, double> &prices) { m_purchasePrices = prices; }
+    void setPurPctMode(bool v) { m_purPctMode = v; }
 
     void restoreTableSplitter(); // call once from MainWindow::showEvent
     void configurePeriods();
@@ -56,6 +57,7 @@ private:
     int        m_savedTableHeight  = -1;
     QByteArray m_savedSplitterState;
     bool       m_showPercentChange = false;
+    bool       m_purPctMode        = false;
     QList<int> m_periods;
     int        m_activePeriodDays  = 0;
 
