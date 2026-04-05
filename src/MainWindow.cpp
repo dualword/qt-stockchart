@@ -296,16 +296,6 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     tbLayout->setContentsMargins(6, 2, 6, 2);
     tbLayout->setSpacing(4);
 
-    auto *displayModeBtn = new QPushButton("%", toolbar);
-    displayModeBtn->setCheckable(true);
-    displayModeBtn->setFixedWidth(32);
-    tbLayout->addWidget(displayModeBtn);
-
-    auto *sep2 = new QFrame(toolbar);
-    sep2->setFrameShape(QFrame::VLine);
-    sep2->setFrameShadow(QFrame::Sunken);
-    tbLayout->addWidget(sep2);
-
     m_chartRangeBtnGroup = new QButtonGroup(this);
     m_chartRangeBtnGroup->setExclusive(true);
 
@@ -419,15 +409,34 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     m_contentStack->addWidget(m_webBrowser); // index 1 — browser
     m_contentStack->setCurrentIndex(0);
 
-    auto *stockTable = new QTableWidget(vertSplitter);
+    // ── Table panel: title + toggle + table ───────────────────────────────────
+    auto *tablePanel = new QWidget(vertSplitter);
+    tablePanel->setMinimumHeight(0);
+    auto *tablePanelLayout = new QVBoxLayout(tablePanel);
+    tablePanelLayout->setContentsMargins(4, 4, 4, 0);
+    tablePanelLayout->setSpacing(2);
+
+    auto *tableTitle = new QLabel("Stock Performance", tablePanel);
+    QFont titleFont = tableTitle->font();
+    titleFont.setBold(true);
+    tableTitle->setFont(titleFont);
+    tablePanelLayout->addWidget(tableTitle);
+
+    auto *displayModeBtn = new QPushButton("% Change", tablePanel);
+    displayModeBtn->setCheckable(true);
+    tablePanelLayout->addWidget(displayModeBtn, 0, Qt::AlignLeft);
+
+    auto *stockTable = new QTableWidget(tablePanel);
     stockTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     stockTable->setAlternatingRowColors(true);
     stockTable->setSelectionMode(QAbstractItemView::SingleSelection);
     stockTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     stockTable->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    vertSplitter->addWidget(m_contentStack);
-    vertSplitter->addWidget(stockTable);
     stockTable->setMinimumHeight(0);
+    tablePanelLayout->addWidget(stockTable, 1);
+
+    vertSplitter->addWidget(m_contentStack);
+    vertSplitter->addWidget(tablePanel);
 
     // Embed the toggle button in the splitter handle so it stays visible when collapsed
     auto *splitHandle = vertSplitter->handle(1);
