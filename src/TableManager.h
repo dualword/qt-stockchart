@@ -31,6 +31,7 @@ public:
 
     void setActivePeriodDays(int days) { m_activePeriodDays = days; }
     void setSeriesColors(const QMap<QString, QColor> &colors) { m_seriesColors = colors; }
+    void setPurchasePrices(const QMap<QString, double> &prices) { m_purchasePrices = prices; }
 
     void restoreTableSplitter(); // call once from MainWindow::showEvent
     void configurePeriods();
@@ -61,5 +62,6 @@ private:
     // Stored so onToggle can refresh with last-known state
     QDate                 m_clickedDate;
     QStringList           m_lastSymbols;
-    QMap<QString, QColor> m_seriesColors;
+    QMap<QString, QColor>  m_seriesColors;
+    QMap<QString, double>  m_purchasePrices;
 };

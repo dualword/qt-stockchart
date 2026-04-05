@@ -75,6 +75,7 @@ private:
     QTextEdit     *m_logEdit              = nullptr;
     QCheckBox     *m_autoRefreshCheck     = nullptr;
     QToolButton   *m_starFilterBtn        = nullptr;
+    QToolButton   *m_purPctBtn            = nullptr;
     QSet<int>      m_starFilterIndices;
     QToolButton      *m_logToggleBtn         = nullptr;
     bool              m_logExpanded          = true;

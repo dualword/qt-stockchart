@@ -252,9 +252,9 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
     const int   nCols    = nPeriods + (hasClick ? 1 : 0);  // period + click columns
     const int   nRows    = syms.size();
 
-    // Column 0 is the color swatch; period/click columns start at index 1.
+    // Column 0 is the color swatch; period/click columns start at index 1; last col = Purchase.
     m_table->setRowCount(nRows);
-    m_table->setColumnCount(nCols + 1);
+    m_table->setColumnCount(nCols + 2);
 
     // Find the period column (0-based period index) matching the active graph range.
     int activeOffset = 0;  // fallback to first period
@@ -271,6 +271,7 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
 
     // Color-swatch column header (narrow, no label)
     m_table->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
+    m_table->setHorizontalHeaderItem(nCols + 1, new QTableWidgetItem("Purchase"));
 
     // Period column headers (table col = c + 1)
     for (int c = 0; c < nPeriods; ++c) {
@@ -351,5 +352,13 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
                 cell->setBackground(refBg);
             m_table->setItem(r, tableCol, cell);
         }
+
+        // Purchase price column (always last)
+        const double purPrice = m_purchasePrices.value(sym, 0.0);
+        auto *purCell = new QTableWidgetItem(purPrice > 0
+            ? QString("$%1").arg(purPrice, 0, 'f', 2) : QString());
+        purCell->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        purCell->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        m_table->setItem(r, nCols + 1, purCell);
     }
 }

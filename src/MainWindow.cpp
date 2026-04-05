@@ -254,6 +254,14 @@ void MainWindow::setupUI()
             this, [this](const QString &) {
         const QStringList sel = m_groupManager->selectedSymbols();
         if (!sel.isEmpty()) {
+            QMap<QString, double> purPrices;
+            for (const QString &sym : sel) {
+                const double p = m_groupManager->purchaseInfoForSymbol(sym).first;
+                if (p > 0) purPrices[sym] = p;
+            }
+            m_tableManager->setPurchasePrices(purPrices);
+            if (m_purPctBtn)
+                m_purPctBtn->setVisible(sel.size() == 1 && purPrices.size() == 1);
             refreshChart(sel);
             m_tableManager->setSeriesColors(m_chartManager->seriesColors());
             m_tableManager->refresh(sel, m_chartManager->clickedDate());
@@ -296,6 +304,22 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     tbLayout->setContentsMargins(6, 2, 6, 2);
     tbLayout->setSpacing(4);
 
+    // Y scale — first on the left
+    m_yScaleCombo = new QComboBox(toolbar);
+    m_yScaleCombo->addItems({ "none", "10%", "20%", "30%", "40%", "50%" });
+    connect(m_yScaleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) {
+        refreshChart(m_groupManager->selectedSymbols());
+    });
+    tbLayout->addWidget(new QLabel("Y:"));
+    tbLayout->addWidget(m_yScaleCombo);
+
+    auto *sep2 = new QFrame(toolbar);
+    sep2->setFrameShape(QFrame::VLine);
+    sep2->setFrameShadow(QFrame::Sunken);
+    tbLayout->addWidget(sep2);
+
+    // Period buttons
     m_chartRangeBtnGroup = new QButtonGroup(this);
     m_chartRangeBtnGroup->setExclusive(true);
 
@@ -315,16 +339,19 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
         m_tableManager->refresh(sel, m_chartManager->clickedDate());
     });
 
-    m_yScaleCombo = new QComboBox(toolbar);
-    m_yScaleCombo->addItems({ "Auto", "+/- 10%", "+/- 20%", "+/- 30%", "+/- 40%", "+/- 50%" });
-    connect(m_yScaleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](int) {
-        refreshChart(m_groupManager->selectedSymbols());
-    });
-
-    tbLayout->addSpacing(10);
-    tbLayout->addWidget(new QLabel("Y:"));
-    tbLayout->addWidget(m_yScaleCombo);
+    // % Pur button — after last period button
+    static const char *kPeriodBtnStyle =
+        "QToolButton { border: 1px solid transparent; border-radius: 3px; padding: 1px 4px; }"
+        "QToolButton:checked { background-color: palette(highlight); "
+        "color: palette(highlighted-text); border-radius: 3px; }";
+    m_purPctBtn = new QToolButton(toolbar);
+    m_purPctBtn->setText("% Pur");
+    m_purPctBtn->setToolTip("% of purchase price");
+    m_purPctBtn->setCheckable(true);
+    m_purPctBtn->setAutoRaise(false);
+    m_purPctBtn->setStyleSheet(kPeriodBtnStyle);
+    m_purPctBtn->setVisible(false); // shown only when 1 stock with purchase price is selected
+    tbLayout->addWidget(m_purPctBtn);
 
     auto *sep3 = new QFrame(toolbar);
     sep3->setFrameShape(QFrame::VLine);
@@ -705,6 +732,18 @@ void MainWindow::onStockSelectionChanged()
             p->fetchData(sym, "3mo");
             loading << sym;
         }
+    }
+
+    // Build purchase-price map and update % Pur button visibility
+    {
+        QMap<QString, double> purPrices;
+        for (const QString &sym : selected) {
+            const double p = m_groupManager->purchaseInfoForSymbol(sym).first;
+            if (p > 0) purPrices[sym] = p;
+        }
+        m_tableManager->setPurchasePrices(purPrices);
+        if (m_purPctBtn)
+            m_purPctBtn->setVisible(selected.size() == 1 && purPrices.size() == 1);
     }
 
     refreshChart(selected);
