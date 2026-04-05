@@ -63,7 +63,10 @@ void TableManager::loadSettings()
 
     m_showPercentChange = as.tableShowPercent();
     m_displayModeBtn->setChecked(m_showPercentChange);
-    m_displayModeBtn->setText(m_showPercentChange ? "% Change" : "Price");
+    m_displayModeBtn->setText(m_showPercentChange ? "%" : "$");
+    m_displayModeBtn->setToolTip(m_showPercentChange
+        ? "% = graph normalized stock value as a percent"
+        : "$ = graph stock price");
 
     // Table open/closed state — sizes are applied by restoreTableSplitter() from showEvent,
     // once the window is fully laid out and the splitter has a real height.
@@ -161,7 +164,10 @@ void TableManager::onSplitterMoved()
 void TableManager::onToggleDisplayMode(bool checked)
 {
     m_showPercentChange = checked;
-    m_displayModeBtn->setText(checked ? "% Change" : "Price");
+    m_displayModeBtn->setText(checked ? "%" : "$");
+    m_displayModeBtn->setToolTip(checked
+        ? "% = graph normalized stock value as a percent"
+        : "$ = graph stock price");
     saveSettings();
     if (m_tableExpanded)
         refresh(m_lastSymbols, m_clickedDate);

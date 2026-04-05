@@ -61,6 +61,7 @@ private:
     void rebuildPeriodButtons(const QList<int> &periods);
     void refreshChart(const QStringList &symbols);
     void applyStarFilter();
+    void applyFontSize(int pointSize);
 
     // ── Widgets ──────────────────────────────────────────────────────────────
     QSplitter     *m_splitter    = nullptr;

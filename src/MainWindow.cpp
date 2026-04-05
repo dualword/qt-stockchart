@@ -38,6 +38,9 @@
 #include <QMovie>
 #include <QPixmap>
 #include <QDialogButtonBox>
+#include <QLineEdit>
+#include <QSlider>
+#include <QStyle>
 
 // ── Construction ──────────────────────────────────────────────────────────────
 
@@ -293,13 +296,10 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     tbLayout->setContentsMargins(6, 2, 6, 2);
     tbLayout->setSpacing(4);
 
-    auto *displayModeBtn = new QPushButton("Price", toolbar);
+    auto *displayModeBtn = new QPushButton("%", toolbar);
     displayModeBtn->setCheckable(true);
-    displayModeBtn->setFixedWidth(80);
+    displayModeBtn->setFixedWidth(32);
     tbLayout->addWidget(displayModeBtn);
-
-    auto *periodsBtn = new QPushButton("⚙ Periods", toolbar);
-    tbLayout->addWidget(periodsBtn);
 
     auto *sep2 = new QFrame(toolbar);
     sep2->setFrameShape(QFrame::VLine);
@@ -511,7 +511,6 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
             this, &MainWindow::rebuildPeriodButtons);
     connect(tableToggleBtn, &QToolButton::clicked, m_tableManager, &TableManager::onToggle);
     connect(displayModeBtn, &QPushButton::toggled, m_tableManager, &TableManager::onToggleDisplayMode);
-    connect(periodsBtn, &QPushButton::clicked, m_tableManager, &TableManager::configurePeriods);
 
     // Save table height on splitter drag
     connect(vertSplitter, &QSplitter::splitterMoved,
@@ -834,6 +833,16 @@ void MainWindow::refreshChart(const QStringList &symbols)
     m_chartManager->updateChart(symbols);
 }
 
+void MainWindow::applyFontSize(int pointSize)
+{
+    QFont f = QApplication::font();
+    f.setPointSize(pointSize);
+    QApplication::setFont(f);
+
+    if (m_logEdit)
+        m_logEdit->setFont(QFont("Courier", pointSize));
+}
+
 void MainWindow::applyStarFilter()
 {
     if (m_starFilterBtn) {
@@ -946,6 +955,10 @@ void MainWindow::loadSettings()
     if (m_yScaleCombo)
         m_yScaleCombo->setCurrentIndex(as.yScaleIndex());
 
+    const int savedFontSize = as.fontPointSize();
+    if (savedFontSize > 0)
+        applyFontSize(savedFontSize);
+
     m_logExpanded = as.logExpanded();
     if (m_logToggleBtn)
         m_logToggleBtn->setText(m_logExpanded ? "▲ Log" : "▼ Log");
@@ -987,6 +1000,7 @@ void MainWindow::saveSettings()
 {
     auto &as = AppSettings::instance();
     as.setAutoRefresh(m_autoRefreshCheck->isChecked());
+    as.setFontPointSize(QApplication::font().pointSize());
     as.setActiveProvider(m_activeProviderId);
     as.setLogExpanded(m_logExpanded);
     as.setYScaleIndex(m_yScaleCombo ? m_yScaleCombo->currentIndex() : 2);
@@ -1068,7 +1082,7 @@ void MainWindow::showHelp()
         "  font-weight: bold;"
         "  border-left: 3px solid #1a73e8;"
         "}");
-    navList->addItems({ "About", "Data / Files / Paths", "Licenses" });
+    navList->addItems({ "About", "Appearance / Behavior", "Licenses" });
 
     // ── Right stacked pages ─────────────────────────────────────────────────
     auto *stack = new QStackedWidget(contentWidget);
@@ -1122,15 +1136,55 @@ void MainWindow::showHelp()
         stack->addWidget(page);
     }
 
-    // Page 1 ── Data / Files / Paths ─────────────────────────────────────────
+    // Page 1 ── Appearance / Behavior ────────────────────────────────────────
     {
         auto *page = new QWidget();
         auto *vl = new QVBoxLayout(page);
         vl->setContentsMargins(20, 20, 20, 20);
-        auto *placeholder = new QLabel("(No data paths configured)", page);
-        placeholder->setAlignment(Qt::AlignCenter);
-        placeholder->setStyleSheet("color: #888888;");
-        vl->addWidget(placeholder);
+        vl->setSpacing(12);
+
+        // ── Period buttons ────────────────────────────────────────────────────
+        auto *periodsDesc = new QLabel(
+            "Add/Remove period buttons (days in the past) to appear over the graph.", page);
+        periodsDesc->setWordWrap(true);
+        vl->addWidget(periodsDesc);
+
+        auto *periodsBtn = new QPushButton("\u2699 Configure Periods", page);
+        periodsBtn->setToolTip("Configure the performance table period columns");
+        connect(periodsBtn, &QPushButton::clicked, this, [this]() {
+            m_tableManager->configurePeriods();
+        });
+        vl->addWidget(periodsBtn, 0, Qt::AlignLeft);
+
+        // ── Font size ─────────────────────────────────────────────────────────
+        auto *sep = new QFrame(page);
+        sep->setFrameShape(QFrame::HLine);
+        sep->setFrameShadow(QFrame::Sunken);
+        vl->addWidget(sep);
+
+        const int currentSize = QApplication::font().pointSize();
+        auto *fontSizeRow = new QHBoxLayout();
+        fontSizeRow->setSpacing(8);
+        auto *fontLabel = new QLabel("Font Size", page);
+        auto *slider = new QSlider(Qt::Horizontal, page);
+        slider->setRange(8, 20);
+        slider->setValue(currentSize);
+        slider->setTickPosition(QSlider::TicksBelow);
+        slider->setTickInterval(2);
+        auto *sizeLabel = new QLabel(QString("%1 pt").arg(currentSize), page);
+        sizeLabel->setFixedWidth(36);
+        sizeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        fontSizeRow->addWidget(fontLabel);
+        fontSizeRow->addWidget(slider, 1);
+        fontSizeRow->addWidget(sizeLabel);
+        vl->addLayout(fontSizeRow);
+
+        connect(slider, &QSlider::valueChanged, this, [this, sizeLabel](int v) {
+            sizeLabel->setText(QString("%1 pt").arg(v));
+            applyFontSize(v);
+            AppSettings::instance().setFontPointSize(v);
+        });
+
         vl->addStretch();
         stack->addWidget(page);
     }
@@ -1141,13 +1195,15 @@ void MainWindow::showHelp()
         auto *vl = new QVBoxLayout(page);
         vl->setContentsMargins(20, 20, 20, 20);
 
-        auto *table = new QTableWidget(m_providers.size(), 3, page);
-        table->setHorizontalHeaderLabels({ "Provider", "API Key", "URL" });
+        auto *table = new QTableWidget(m_providers.size(), 4, page);
+        table->setHorizontalHeaderLabels({ "", "Provider", "API Key", "URL" });
         table->setEditTriggers(QAbstractItemView::NoEditTriggers);
         table->setSelectionMode(QAbstractItemView::NoSelection);
         table->verticalHeader()->setVisible(false);
-        table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+        table->horizontalHeader()->resizeSection(0, 28);
         table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
         table->horizontalHeader()->setStretchLastSection(true);
         table->setShowGrid(true);
         table->setAlternatingRowColors(true);
@@ -1155,29 +1211,65 @@ void MainWindow::showHelp()
         for (int r = 0; r < m_providers.size(); ++r) {
             StockDataProvider *p = m_providers[r];
 
+            // Column 0: trash button — clears API key for this provider
+            auto *trashBtn = new QToolButton(page);
+            trashBtn->setIcon(QApplication::style()->standardIcon(QStyle::SP_TrashIcon));
+            trashBtn->setAutoRaise(true);
+            trashBtn->setToolTip("Clear API key for " + p->displayName());
+            connect(trashBtn, &QToolButton::clicked, this, [this, p, r, table]() {
+                if (QMessageBox::question(this, "Clear Credentials",
+                        QString("Clear API key for %1?").arg(p->displayName()))
+                        != QMessageBox::Yes) return;
+                QMap<QString,QString> creds = p->credentials();
+                for (const auto &field : p->credentialFields())
+                    creds[field.first] = QString();
+                p->setCredentials(creds);
+                saveSettings();
+                if (auto *le = qobject_cast<QLineEdit*>(table->cellWidget(r, 2)))
+                    le->setText(QString());
+            });
+            auto *trashCell = new QWidget(page);
+            auto *trashLayout = new QHBoxLayout(trashCell);
+            trashLayout->setContentsMargins(2, 0, 2, 0);
+            trashLayout->setAlignment(Qt::AlignCenter);
+            trashLayout->addWidget(trashBtn);
+            table->setCellWidget(r, 0, trashCell);
+
+            // Column 1: provider name (read-only)
             auto *nameItem = new QTableWidgetItem(p->displayName());
             nameItem->setFlags(Qt::ItemIsEnabled);
-            table->setItem(r, 0, nameItem);
+            table->setItem(r, 1, nameItem);
 
-            QString keyVal;
+            // Column 2: API key — editable QLineEdit
             const auto fields = p->credentialFields();
+            QString keyVal;
             if (!fields.isEmpty())
                 keyVal = p->credentials().value(fields.first().first);
-            auto *keyItem = new QTableWidgetItem(keyVal);
-            keyItem->setFlags(Qt::ItemIsEnabled);
-            table->setItem(r, 1, keyItem);
+            auto *keyEdit = new QLineEdit(keyVal, page);
+            keyEdit->setPlaceholderText("Enter API key...");
+            keyEdit->setFrame(false);
+            connect(keyEdit, &QLineEdit::editingFinished, this, [this, p, keyEdit]() {
+                const auto flds = p->credentialFields();
+                if (flds.isEmpty()) return;
+                QMap<QString,QString> creds = p->credentials();
+                creds[flds.first().first] = keyEdit->text().trimmed();
+                p->setCredentials(creds);
+                saveSettings();
+            });
+            table->setCellWidget(r, 2, keyEdit);
 
+            // Column 3: signup URL
             const QString url = p->signupUrl();
             if (!url.isEmpty()) {
                 auto *urlLabel = new QLabel(
                     QString("<a href='%1'>%1</a>").arg(url), page);
                 urlLabel->setOpenExternalLinks(true);
                 urlLabel->setContentsMargins(4, 0, 4, 0);
-                table->setCellWidget(r, 2, urlLabel);
+                table->setCellWidget(r, 3, urlLabel);
             } else {
                 auto *urlItem = new QTableWidgetItem(QString());
                 urlItem->setFlags(Qt::ItemIsEnabled);
-                table->setItem(r, 2, urlItem);
+                table->setItem(r, 3, urlItem);
             }
         }
         table->resizeRowsToContents();

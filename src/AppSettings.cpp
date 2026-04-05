@@ -96,6 +96,13 @@ bool AppSettings::tableExpanded() const
 void AppSettings::setTableExpanded(bool v)
     { m_settings.setValue("tableExpanded", v); }
 
+// ── Appearance ────────────────────────────────────────────────────────────────
+
+int AppSettings::fontPointSize() const
+    { return m_settings.value("fontPointSize", 0).toInt(); }
+void AppSettings::setFontPointSize(int v)
+    { m_settings.setValue("fontPointSize", v); }
+
 // ── Ad blocker ────────────────────────────────────────────────────────────────
 
 QStringList AppSettings::adBlockBlacklist() const

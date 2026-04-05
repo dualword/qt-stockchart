@@ -77,6 +77,10 @@ public:
     bool         tableExpanded() const;
     void         setTableExpanded(bool v);
 
+    // ── Appearance ────────────────────────────────────────────────────────────
+    int  fontPointSize() const;        // 0 = use system default
+    void setFontPointSize(int v);
+
     // ── Ad blocker ────────────────────────────────────────────────────────────
     QStringList  adBlockBlacklist() const;
     void         setAdBlockBlacklist(const QStringList &v);
