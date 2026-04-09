@@ -85,10 +85,30 @@ void YahooPageProvider::onReplyFinished(QNetworkReply *reply)
     qint64  epoch     = 0;
     QString quoteType;
 
+    if (price <= 0.0) {
+        // This targets the "raw" value of the post-market price in the JSON block
+        QRegularExpression postPriceRx(R"rx("postMarketPrice\\":\{\\"raw\\":([\d,]+\.?\d*))rx");
+
+        const auto match = postPriceRx.match(html);
+        if (match.hasMatch()) {
+            QString postPriceStr = match.captured(1);
+            postPriceStr.remove(',');
+            price = postPriceStr.toDouble();
+        }
+
+        if (price > 0) {
+            QRegularExpression timeRx(R"rx("postMarketTime\\":\{\\"raw\\":(\d+))rx");
+            auto timeMatch = timeRx.match(html);
+            if (timeMatch.hasMatch()) {
+                epoch = timeMatch.captured(1).toLongLong();
+            }
+        }
+    }
+
     // ── Method 1: data-testid="qsp-price" span (stocks, ETFs, indices) ────────
     // <span ... data-testid="qsp-price">248.16 </span>
     // <span ... data-testid="qsp-price">6,582.69 </span>   ← commas for large prices
-    {
+    if (price <= 0.0) {
         QRegularExpression priceRx(R"rx(data-testid="qsp-price"[^>]*>([\d,]+\.?\d*))rx");
         const auto pm = priceRx.match(html);
         if (pm.hasMatch()) {
@@ -115,6 +135,35 @@ void YahooPageProvider::onReplyFinished(QNetworkReply *reply)
         auto m2 = rx2.match(html);
         if      (m1.hasMatch()) price = m1.captured(1).toDouble();
         else if (m2.hasMatch()) price = m2.captured(1).toDouble();
+    }
+
+
+    if (price <= 0.0) {
+        // ue,\"regularMarketPrice\":{\"raw\":27.35,\"fmt\":\"27.35\"}
+        QRegularExpression priceRx(R"rx("regularMarketPrice\\":\{\\"raw\\":([\d,]+\.?\d*))rx");
+        const auto pm = priceRx.match(html);
+        if (pm.hasMatch()) {
+            QString priceStr = pm.captured(1);
+            priceStr.remove(',');
+            price = priceStr.toDouble();
+        }
+    }
+
+    // \"navPrice\":{\"raw\":18.9491,\"fmt\":\"18.95\"},
+    if (price <= 0.0) {
+        QRegularExpression priceRx(R"rx(navPrice\\":\s*\{\\"raw\\":\s*([\d,]+\.?\d*))rx");
+        const auto pm = priceRx.match(html);
+        if (pm.hasMatch()) {
+            QString priceStr = pm.captured(1);
+            priceStr.remove(',');
+            price = priceStr.toDouble();
+        }
+        QRegularExpression priceRx1(R"rx(navPrice)rx");
+        QRegularExpression priceRx2(R"rx(navPrice.":)rx");
+        QRegularExpression priceRx3(R"rx(navPrice.":\s*\{."raw")rx");
+        bool b1 = priceRx1.match(html).hasMatch();
+        bool b2 = priceRx2.match(html).hasMatch();
+        bool b3 = priceRx3.match(html).hasMatch();
     }
 
     if (price <= 0.0) {

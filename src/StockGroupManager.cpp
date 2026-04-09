@@ -388,7 +388,7 @@ void StockGroupManager::onListHistorical(QTreeWidgetItem *item)
 
     for (int i = 0; i < data.size(); ++i) {
         const StockDataPoint &pt = data[i];
-        auto *dtItem    = new QTableWidgetItem(pt.timestamp.toString("dd-MMM-yy hh:mm"));
+        auto *dtItem    = new QTableWidgetItem(pt.timestamp.toString("dd-MMM-yy hh:mm t"));
         auto *priceItem = new QTableWidgetItem(QString::number(pt.price, 'f', 2));
         priceItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         table->setItem(i, 0, dtItem);
@@ -402,7 +402,14 @@ void StockGroupManager::onListHistorical(QTreeWidgetItem *item)
     connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::accept);
 
     layout->addWidget(table);
-    layout->addWidget(btns);
+
+    auto *bottomRow = new QHBoxLayout();
+    auto *label = new QLabel(QDateTime::currentDateTime().toString("dd-MMM-yy hh:mm t"), &dlg);
+    bottomRow->addWidget(label);
+    bottomRow->addStretch();
+    bottomRow->addWidget(btns);
+
+    layout->addLayout(bottomRow);
 
     dlg.exec();
 }

@@ -280,7 +280,8 @@ void StockCacheManager::clearSymbolCache(const QString &symbol)
 
 qint64 StockCacheManager::dataSecs(const QString &sym) const
 {
-    if (!m_cache.contains(sym) || m_cache[sym].isEmpty()) return -1;
+    if (!m_cache.contains(sym) || m_cache[sym].isEmpty())
+        return -1;
     qint64 s = m_cache[sym].last().timestamp.secsTo(QDateTime::currentDateTime());
     return s >= 0 ? s : 0;
 }
@@ -308,7 +309,8 @@ QString StockCacheManager::ageString(const QString &sym) const
     const qint64 days = secs / 86400;
     const qint64 hrs  = secs / 3600;
     const qint64 mins = secs / 60;
-    if (days > 1) return QString("%1d").arg(days);
-    if (hrs  >= 1) return QString("%1h").arg(hrs);
-    return QString("%1m").arg(qMax(qint64(1), mins));
+    if (days > 1)
+        return QString::asprintf("%02dD%02d", days, hrs-24*days);
+    else
+        return QString::asprintf("%02dH%02d", hrs, mins-60*hrs);
 }

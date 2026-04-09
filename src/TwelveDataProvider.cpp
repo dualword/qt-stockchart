@@ -86,6 +86,38 @@ void TwelveDataProvider::onReplyFinished(QNetworkReply *reply)
     emit dataReady(symbol, points);
 }
 
+/*
+  curl -sS "https://api.twelvedata.com/quote?symbol=NFLX&apikey=APIKEY"
+
+  "symbol": "NFLX",
+  "name": "Netflix, Inc.",
+  "exchange": "NASDAQ",
+  "mic_code": "XNGS",
+  "currency": "USD",
+  "datetime": "2026-04-08",
+  "timestamp": 1775655000,
+  "last_quote_at": 1775678340,
+  "open": "100.14000",
+  "high": "100.38000",
+  "low": "97.44000",
+  "close": "99.39000",
+  "volume": "30872619",
+  "previous_close": "98.82000",
+  "change": "0.56999969",
+  "percent_change": "0.57680601",
+  "average_volume": "38072932",
+  "is_market_open": false,
+  "fifty_two_week": {
+    "low": "75.010002",
+    "high": "134.11501",
+    "low_change": "24.38000",
+    "high_change": "-34.72501",
+    "low_change_percent": "32.50233",
+    "high_change_percent": "-25.89196",
+    "range": "75.010002 - 134.115005"
+  }
+*/
+
 void TwelveDataProvider::fetchLatestQuote(const QString &symbol)
 {
     QUrl url("https://api.twelvedata.com/quote");
@@ -109,11 +141,24 @@ void TwelveDataProvider::fetchLatestQuote(const QString &symbol)
         }
         QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
         if (root["status"].toString() == "error") return; // silently skip (e.g., rate-limited)
+
         // "close" holds the most recent session close; "datetime" is "YYYY-MM-DD[ HH:mm:ss]"
+
         const double price    = root["close"].toString().toDouble();
         const QString dateStr = root["datetime"].toString().left(10); // YYYY-MM-DD
-        if (price <= 0.0 || dateStr.isEmpty()) return;
-        QDateTime dt = QDateTime::fromString(dateStr, "yyyy-MM-dd");
+
+        QDateTime refDt(QDate(2026, 1, 1), QTime(0, 0, 0), Qt::UTC);
+        qint64 epochRef = refDt.toSecsSinceEpoch();
+
+        long epochSec = root["last_quote_at"].toInt(0);
+        if (epochSec < epochRef)
+            epochSec = root["timestamp"].toInt(0);
+
+        if (price <= 0.0 || epochSec < epochRef)
+            return;
+
+        QDateTime dt = QDateTime::fromSecsSinceEpoch(epochSec);
+        // QDateTime dt = QDateTime::fromString(dateStr, "yyyy-MM-dd");
         dt.setTimeZone(QTimeZone::utc());
         if (!dt.isValid()) return;
         emit dataReady(symbol, QVector<StockDataPoint>{{dt, price}});
