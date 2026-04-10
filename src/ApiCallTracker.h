@@ -8,6 +8,7 @@
 class QWidget;
 class QBoxLayout;
 class QLabel;
+class QPushButton;
 
 // Manages daily API call counts and renders the info panel at the bottom of the left sidebar.
 class ApiCallTracker : public QObject
@@ -27,10 +28,13 @@ public:
     QWidget *rowWidget(const QString &providerId) const;
 
 private:
-    QList<StockDataProvider*>  m_providers;
-    QDate                      m_currentDay;
-    QMap<QString, int>         m_dailyCallCounts;
-    QMap<QString, QLabel*>     m_nameLabels;
-    QMap<QString, QLabel*>     m_countLabels;
-    QMap<QString, QWidget*>    m_rowWidgets;
+    QList<StockDataProvider*>   m_providers;
+    QDate                       m_currentDay;
+    QMap<QString, int>          m_dailyCallCounts;
+    QMap<QString, QLabel*>      m_nameLabels;
+    QMap<QString, QLabel*>      m_countLabels;
+    QMap<QString, QPushButton*> m_histBtns;
+    QMap<QString, QPushButton*> m_quoteBtns;
+    QMap<QString, QWidget*>     m_rowWidgets;
+    QWidget                    *m_panelParent = nullptr;
 };

@@ -63,6 +63,8 @@ void PolygonProvider::onReplyFinished(QNetworkReply *reply)
 
     // Always read the body — Polygon puts useful diagnostic JSON in error responses too.
     const QByteArray body = reply->readAll();
+    m_lastHistoryJson = body;
+    emit historyResponseStored();
 
     if (reply->error() != QNetworkReply::NoError) {
         // Try to surface Polygon's own error text from the body.
@@ -141,7 +143,10 @@ void PolygonProvider::fetchLatestQuote(const QString &symbol)
             emit errorOccurred(symbol, "Polygon.io (quote): " + reply->errorString());
             return;
         }
-        QJsonObject ticker = QJsonDocument::fromJson(reply->readAll()).object()["ticker"].toObject();
+        const QByteArray body = reply->readAll();
+        m_lastQuoteJson = body;
+        emit quoteResponseStored();
+        QJsonObject ticker = QJsonDocument::fromJson(body).object()["ticker"].toObject();
         const double price = ticker["day"].toObject()["c"].toDouble();
         if (price <= 0.0) return;
         // Use today at 16:00 ET as the canonical timestamp for the day's close

@@ -112,6 +112,10 @@ void FmpProvider::onReplyFinished(QNetworkReply *reply)
     }
 
     const QByteArray body = reply->readAll();
+    // Store raw response before parsing — differentiate history vs quote by range key
+    if (range == "quote") { m_lastQuoteJson = body;   emit quoteResponseStored(); }
+    else                  { m_lastHistoryJson = body; emit historyResponseStored(); }
+
     const QJsonDocument doc = QJsonDocument::fromJson(body);
     if (doc.isNull()) {
         emit errorOccurred(symbol, "FMP: failed to parse JSON for " + symbol);

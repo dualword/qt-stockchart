@@ -1,16 +1,27 @@
 #include "ApiCallTracker.h"
 #include "AppSettings.h"
+#include "JsonViewerDialog.h"
 #include <QFrame>
 #include <QLabel>
+#include <QPushButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QBoxLayout>
+
+// Returns a compact human-readable size string (e.g. "12K", "850B", "-")
+static QString sizeStr(int bytes)
+{
+    if (bytes <= 0) return "-";
+    if (bytes < 1024) return QString::number(bytes) + "B";
+    return QString::number(bytes / 1024) + "K";
+}
 
 ApiCallTracker::ApiCallTracker(const QList<StockDataProvider*> &providers,
                                QWidget *panelParent, QBoxLayout *layout,
                                QObject *parent)
     : QObject(parent)
     , m_providers(providers)
+    , m_panelParent(panelParent)
 {
     // ── Build the panel widget ────────────────────────────────────────────────
     auto *panel = new QFrame(panelParent);
@@ -37,6 +48,38 @@ ApiCallTracker::ApiCallTracker(const QList<StockDataProvider*> &providers,
     QFont sf;
     sf.setPointSize(sf.pointSize() - 1);
 
+    // ── Column header row ────────────────────────────────────────────────────
+    {
+        auto *hdr = new QWidget(panel);
+        auto *hl  = new QHBoxLayout(hdr);
+        hl->setContentsMargins(2, 0, 2, 0);
+        hl->setSpacing(4);
+
+        auto *hName  = new QLabel("Provider", hdr);
+        auto *hCalls = new QLabel("Calls", hdr);
+        auto *hHist  = new QLabel("History", hdr);
+        auto *hQuote = new QLabel("Quote", hdr);
+
+        QFont hf = sf;
+        hf.setItalic(true);
+        for (auto *lbl : {hName, hCalls, hHist, hQuote}) lbl->setFont(hf);
+
+        hCalls->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        hHist->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        hQuote->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+        hCalls->setFixedWidth(30);
+        hHist->setFixedWidth(38);
+        hQuote->setFixedWidth(38);
+
+        hl->addWidget(hName);
+        hl->addStretch();
+        hl->addWidget(hCalls);
+        hl->addWidget(hHist);
+        hl->addWidget(hQuote);
+        vl->addWidget(hdr);
+    }
+
     for (StockDataProvider *p : m_providers) {
         auto *row = new QFrame(panel);
         row->setCursor(Qt::PointingHandCursor);
@@ -52,16 +95,66 @@ ApiCallTracker::ApiCallTracker(const QList<StockDataProvider*> &providers,
         auto *countLabel = new QLabel("0", row);
         countLabel->setFont(sf);
         countLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        countLabel->setFixedWidth(30);
         countLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
+        // "History" and "Quote" clickable size buttons
+        auto *histBtn = new QPushButton("-", row);
+        histBtn->setFlat(true);
+        histBtn->setFont(sf);
+        histBtn->setCursor(Qt::PointingHandCursor);
+        histBtn->setFixedWidth(38);
+        histBtn->setToolTip("Click to view last fetchData JSON response");
+
+        auto *quoteBtn = new QPushButton("-", row);
+        quoteBtn->setFlat(true);
+        quoteBtn->setFont(sf);
+        quoteBtn->setCursor(Qt::PointingHandCursor);
+        quoteBtn->setFixedWidth(38);
+        quoteBtn->setToolTip("Click to view last fetchLatestQuote JSON response");
 
         hl->addWidget(nameLabel);
         hl->addStretch();
         hl->addWidget(countLabel);
+        hl->addWidget(histBtn);
+        hl->addWidget(quoteBtn);
 
         vl->addWidget(row);
         m_nameLabels[p->id()]  = nameLabel;
         m_countLabels[p->id()] = countLabel;
+        m_histBtns[p->id()]    = histBtn;
+        m_quoteBtns[p->id()]   = quoteBtn;
         m_rowWidgets[p->id()]  = row;
+
+        // Connect provider signals to update button text
+        connect(p, &StockDataProvider::historyResponseStored, this, [this, p]() {
+            if (auto *btn = m_histBtns.value(p->id()))
+                btn->setText(sizeStr(p->lastHistoryJson().size()));
+        });
+        connect(p, &StockDataProvider::quoteResponseStored, this, [this, p]() {
+            if (auto *btn = m_quoteBtns.value(p->id()))
+                btn->setText(sizeStr(p->lastQuoteJson().size()));
+        });
+
+        // Open viewer dialog on button click
+        connect(histBtn, &QPushButton::clicked, this, [this, p]() {
+            const QByteArray data = p->lastHistoryJson();
+            if (data.isEmpty()) return;
+            auto *dlg = new JsonViewerDialog(
+                p->displayName() + " — History (fetchData) Response",
+                data, m_panelParent ? m_panelParent->window() : nullptr);
+            dlg->setAttribute(Qt::WA_DeleteOnClose);
+            dlg->show();
+        });
+        connect(quoteBtn, &QPushButton::clicked, this, [this, p]() {
+            const QByteArray data = p->lastQuoteJson();
+            if (data.isEmpty()) return;
+            auto *dlg = new JsonViewerDialog(
+                p->displayName() + " — Quote (fetchLatestQuote) Response",
+                data, m_panelParent ? m_panelParent->window() : nullptr);
+            dlg->setAttribute(Qt::WA_DeleteOnClose);
+            dlg->show();
+        });
     }
 
     layout->addWidget(panel);

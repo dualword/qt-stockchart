@@ -178,7 +178,12 @@ void YahooFinanceProvider::onReplyFinished(QNetworkReply *reply)
     }
     m_symbolsRetried.remove(symbol);
 
-    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    const QByteArray body = reply->readAll();
+    // "5d" range is used exclusively by fetchLatestQuote; all other ranges are history fetches
+    if (range == "5d") { m_lastQuoteJson = body;   emit quoteResponseStored(); }
+    else               { m_lastHistoryJson = body; emit historyResponseStored(); }
+
+    QJsonDocument doc = QJsonDocument::fromJson(body);
     if (doc.isNull()) {
         emit errorOccurred(symbol, "Yahoo: failed to parse JSON");
         return;

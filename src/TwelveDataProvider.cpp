@@ -56,7 +56,10 @@ void TwelveDataProvider::onReplyFinished(QNetworkReply *reply)
         return;
     }
 
-    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    const QByteArray body = reply->readAll();
+    m_lastHistoryJson = body;
+    emit historyResponseStored();
+    QJsonDocument doc = QJsonDocument::fromJson(body);
     if (doc.isNull()) {
         emit errorOccurred(symbol, "Twelve Data: failed to parse JSON");
         return;
@@ -139,7 +142,10 @@ void TwelveDataProvider::fetchLatestQuote(const QString &symbol)
             emit errorOccurred(symbol, "Twelve Data (quote): " + reply->errorString());
             return;
         }
-        QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
+        const QByteArray body = reply->readAll();
+        m_lastQuoteJson = body;
+        emit quoteResponseStored();
+        QJsonObject root = QJsonDocument::fromJson(body).object();
         if (root["status"].toString() == "error") return; // silently skip (e.g., rate-limited)
 
         // "close" holds the most recent session close; "datetime" is "YYYY-MM-DD[ HH:mm:ss]"

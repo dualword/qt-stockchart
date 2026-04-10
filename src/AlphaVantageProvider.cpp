@@ -56,7 +56,10 @@ void AlphaVantageProvider::onReplyFinished(QNetworkReply *reply)
         return;
     }
 
-    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    const QByteArray body = reply->readAll();
+    m_lastHistoryJson = body;
+    emit historyResponseStored();
+    QJsonDocument doc = QJsonDocument::fromJson(body);
     if (doc.isNull()) {
         emit errorOccurred(symbol, "Alpha Vantage: failed to parse JSON");
         return;
@@ -119,7 +122,10 @@ void AlphaVantageProvider::fetchLatestQuote(const QString &symbol)
             emit errorOccurred(symbol, "Alpha Vantage (quote): " + reply->errorString());
             return;
         }
-        QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
+        const QByteArray body = reply->readAll();
+        m_lastQuoteJson = body;
+        emit quoteResponseStored();
+        QJsonObject root = QJsonDocument::fromJson(body).object();
         if (root.contains("Information") || root.contains("Note")) return; // rate-limited; skip silently
         QJsonObject quote = root["Global Quote"].toObject();
         if (quote.isEmpty()) return;

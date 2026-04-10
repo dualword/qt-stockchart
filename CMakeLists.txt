@@ -39,6 +39,7 @@ set(SOURCES
     src/AdBlockDialog.cpp
     src/AppSettings.cpp
     src/JSettings.cpp
+    src/JsonViewerDialog.cpp
 )
 
 set(HEADERS
@@ -65,6 +66,7 @@ set(HEADERS
     src/AdBlockDialog.h
     src/AppSettings.h
     src/JSettings.h
+    src/JsonViewerDialog.h
 )
 
 option(BUILD_AS_BUNDLE "Build as a macOS App Bundle" ON)

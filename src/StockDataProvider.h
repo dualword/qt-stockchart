@@ -5,6 +5,7 @@
 #include <QMap>
 #include <QPair>
 #include <QList>
+#include <QByteArray>
 #include <QNetworkReply>
 
 struct StockDataPoint {
@@ -36,15 +37,23 @@ public:
     // Fetches the latest available price (today's close or intraday) and emits dataReady.
     virtual void fetchLatestQuote(const QString &symbol) { Q_UNUSED(symbol); }
 
+    // Raw response bodies from the last successful network reply (empty if never fetched)
+    QByteArray lastHistoryJson() const { return m_lastHistoryJson; }
+    QByteArray lastQuoteJson()   const { return m_lastQuoteJson; }
+
 signals:
     void dataReady(const QString &symbol, const QVector<StockDataPoint> &data);
     void errorOccurred(const QString &symbol, const QString &message);
     void symbolTypeReady(const QString &symbol, SymbolType type);
+    void historyResponseStored(); // emitted after m_lastHistoryJson is updated
+    void quoteResponseStored();   // emitted after m_lastQuoteJson is updated
 
 protected:
     // Tracks in-flight data replies: reply -> {symbol, range}
     QMap<QNetworkReply*, QPair<QString,QString>> m_pending;
     QMap<QString,QString> m_credentials;
+    QByteArray m_lastHistoryJson;
+    QByteArray m_lastQuoteJson;
 
     static int rangeToDays(const QString &range);
 };

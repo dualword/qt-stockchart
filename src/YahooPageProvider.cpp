@@ -80,7 +80,13 @@ void YahooPageProvider::onReplyFinished(QNetworkReply *reply)
         return;
     }
 
-    const QString html = QString::fromUtf8(reply->readAll());
+    const QByteArray rawBody = reply->readAll();
+    // YahooPage returns HTML for both fetchData and fetchLatestQuote — store for both slots
+    m_lastHistoryJson = rawBody;
+    m_lastQuoteJson   = rawBody;
+    emit historyResponseStored();
+    emit quoteResponseStored();
+    const QString html = QString::fromUtf8(rawBody);
     double  price     = 0.0;
     qint64  epoch     = 0;
     QString quoteType;

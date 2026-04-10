@@ -58,7 +58,10 @@ void FinnhubProvider::onReplyFinished(QNetworkReply *reply)
         return;
     }
 
-    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    const QByteArray body = reply->readAll();
+    m_lastHistoryJson = body;
+    emit historyResponseStored();
+    QJsonDocument doc = QJsonDocument::fromJson(body);
     if (doc.isNull()) {
         emit errorOccurred(symbol, "Finnhub: failed to parse JSON");
         return;
@@ -107,7 +110,10 @@ void FinnhubProvider::fetchLatestQuote(const QString &symbol)
             emit errorOccurred(symbol, "Finnhub (quote): " + reply->errorString());
             return;
         }
-        QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
+        const QByteArray body = reply->readAll();
+        m_lastQuoteJson = body;
+        emit quoteResponseStored();
+        QJsonObject root = QJsonDocument::fromJson(body).object();
         const double price = root["c"].toDouble(); // current price
         if (price <= 0.0) return;
         // "t" is the Unix timestamp of the last trade; fall back to today 16:00 ET
