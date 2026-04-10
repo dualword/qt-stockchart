@@ -98,19 +98,21 @@ ApiCallTracker::ApiCallTracker(const QList<StockDataProvider*> &providers,
         countLabel->setFixedWidth(30);
         countLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
-        // "History" and "Quote" clickable size buttons
+        // "History" and "Quote" clickable size buttons — fix height to match label rows
+        const int btnH = QFontMetrics(sf).height() + 2;
+
         auto *histBtn = new QPushButton("-", row);
         histBtn->setFlat(true);
         histBtn->setFont(sf);
         histBtn->setCursor(Qt::PointingHandCursor);
-        histBtn->setFixedWidth(38);
+        histBtn->setFixedSize(38, btnH);
         histBtn->setToolTip("Click to view last fetchData JSON response");
 
         auto *quoteBtn = new QPushButton("-", row);
         quoteBtn->setFlat(true);
         quoteBtn->setFont(sf);
         quoteBtn->setCursor(Qt::PointingHandCursor);
-        quoteBtn->setFixedWidth(38);
+        quoteBtn->setFixedSize(38, btnH);
         quoteBtn->setToolTip("Click to view last fetchLatestQuote JSON response");
 
         hl->addWidget(nameLabel);
