@@ -1,5 +1,6 @@
 #include "MorningstarProvider.h"
 #include "Logger.h"
+#include <QNetworkCookie>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QRegularExpression>
@@ -27,6 +28,10 @@ MorningstarProvider::MorningstarProvider(QObject *parent)
     : StockDataProvider(parent)
     , m_manager(new QNetworkAccessManager(this))
 {
+    // Explicit cookie jar so Cloudflare session cookies (__cf_bm, cf_clearance)
+    // received from the warm-up and any successful quote page are preserved and
+    // re-sent on every subsequent request to morningstar.com.
+    m_manager->setCookieJar(new QNetworkCookieJar(m_manager));
     connect(m_manager, &QNetworkAccessManager::finished,
             this, &MorningstarProvider::onReplyFinished);
 }
@@ -47,23 +52,12 @@ void MorningstarProvider::fetchLatestQuote(const QString &symbol)
 
 // ── Network ───────────────────────────────────────────────────────────────────
 
-void MorningstarProvider::doFetch(const QString &symbol)
+// Shared header builder.
+// NOTE: Do NOT set Accept-Encoding manually. Qt negotiates gzip/deflate itself
+// and auto-decompresses. Overriding it disables that, delivering raw bytes.
+QNetworkRequest MorningstarProvider::buildRequest(const QUrl &url) const
 {
-    // Use cached exchange if we found a working one before, else start from the top.
-    const QString exchange = m_symbolExchange.value(symbol, kExchanges.first());
-    fetchQuotePage(symbol, exchange);
-}
-
-void MorningstarProvider::fetchQuotePage(const QString &symbol, const QString &exchange)
-{
-    // Morningstar URLs use lowercase ticker symbols.
-    const QUrl url(QString("https://www.morningstar.com/stocks/%1/%2/quote")
-                   .arg(exchange, symbol.toLower()));
-
     QNetworkRequest request{url};
-    // Do NOT set Accept-Encoding manually — Qt negotiates gzip/deflate itself and
-    // auto-decompresses the response body. Setting it manually disables that
-    // auto-decompression, causing raw compressed bytes to arrive as the body.
     request.setRawHeader("User-Agent",                kUserAgent);
     request.setRawHeader("Accept",                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
     request.setRawHeader("Accept-Language",           "en-US,en;q=0.9");
@@ -75,8 +69,44 @@ void MorningstarProvider::fetchQuotePage(const QString &symbol, const QString &e
     request.setRawHeader("Cache-Control",             "max-age=0");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
+    return request;
+}
 
+void MorningstarProvider::doFetch(const QString &symbol)
+{
+    if (!m_warmedUp) {
+        // Queue the symbol and let the warm-up finish first.
+        // If a warm-up is already in flight (queue non-empty), just queue.
+        if (m_warmupQueue.isEmpty())
+            startWarmup(symbol);
+        else if (!m_warmupQueue.contains(symbol))
+            m_warmupQueue.append(symbol);
+        return;
+    }
+    // Use cached exchange if we found a working one before, else start from the top.
+    const QString exchange = m_symbolExchange.value(symbol, kExchanges.first());
+    fetchQuotePage(symbol, exchange);
+}
+
+void MorningstarProvider::startWarmup(const QString &pendingSymbol)
+{
+    // Fetch the Morningstar homepage so that Cloudflare session cookies are set
+    // before we make any quote-page requests. The response body is discarded.
+    m_warmupQueue.append(pendingSymbol);
+    const QUrl url("https://www.morningstar.com/");
+    QNetworkRequest request = buildRequest(url);
     QNetworkReply *reply = m_manager->get(request);
+    m_pending[reply] = {pendingSymbol, kWarmupTag};
+    Logger::instance().append("Morningstar warm-up GET " + url.toString());
+}
+
+void MorningstarProvider::fetchQuotePage(const QString &symbol, const QString &exchange)
+{
+    // Morningstar URLs use lowercase ticker symbols.
+    const QUrl url(QString("https://www.morningstar.com/stocks/%1/%2/quote")
+                   .arg(exchange, symbol.toLower()));
+
+    QNetworkReply *reply = m_manager->get(buildRequest(url));
     m_pending[reply] = {symbol, exchange};
     Logger::instance().append(
         QString("Morningstar [%1/%2] GET %3").arg(symbol, exchange, url.toString()));
@@ -159,6 +189,24 @@ void MorningstarProvider::onReplyFinished(QNetworkReply *reply)
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     Logger::instance().append(
         QString("Morningstar [%1/%2] HTTP %3").arg(symbol, exchange).arg(httpStatus));
+
+    // ── Warm-up reply ──────────────────────────────────────────────────────────
+    if (exchange == kWarmupTag) {
+        // The response body is irrelevant; cookies have been stored in the jar.
+        // Log how many cookies were captured for diagnostics.
+        const auto cookies = m_manager->cookieJar()
+                             ->cookiesForUrl(QUrl("https://www.morningstar.com/"));
+        Logger::instance().append(
+            QString("Morningstar warm-up done (HTTP %1, %2 cookies) — flushing queue")
+            .arg(httpStatus).arg(cookies.size()));
+        m_warmedUp = true;
+        // Dispatch all symbols that queued while waiting for the warm-up.
+        const QStringList queue = m_warmupQueue;
+        m_warmupQueue.clear();
+        for (const QString &sym : queue)
+            doFetch(sym);
+        return;
+    }
 
     // 202 / 429 / 503 → bot-protection or rate-limit: a session-level block,
     // not an exchange mismatch. Retrying other exchanges would just burn more
