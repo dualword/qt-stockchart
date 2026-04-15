@@ -4,6 +4,7 @@
 #include <QList>
 #include <QMap>
 #include <QObject>
+#include <QSet>
 #include <QTableWidget>
 #include <QSplitter>
 #include <QToolButton>
@@ -33,6 +34,9 @@ public:
     void setSeriesColors(const QMap<QString, QColor> &colors) { m_seriesColors = colors; }
     void setPurchasePrices(const QMap<QString, double> &prices) { m_purchasePrices = prices; }
     void setPurPctMode(bool v) { m_purPctMode = v; }
+    void setThickSymbol(const QString &sym)           { m_thickSymbol   = sym; }
+    void setHiddenSymbols(const QSet<QString> &syms)  { m_hiddenSymbols = syms; }
+    QTableWidget *tableWidget() const { return m_table; }
 
     void restoreTableSplitter(); // call once from MainWindow::showEvent
     void configurePeriods();
@@ -65,4 +69,6 @@ private:
     QStringList           m_lastSymbols;
     QMap<QString, QColor>  m_seriesColors;
     QMap<QString, double>  m_purchasePrices;
+    QString               m_thickSymbol;    // currently highlighted symbol (for col-0 badge)
+    QSet<QString>         m_hiddenSymbols;  // hidden symbols (for col-1 eye icon)
 };

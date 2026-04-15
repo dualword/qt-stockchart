@@ -12,11 +12,18 @@
 
 // Exchanges tried in order when the cached exchange is unknown for a symbol.
 // Each corresponds to a Morningstar exchange code used in the URL path.
+// Each entry is the full "assetType/exchange" path used in the Morningstar URL:
+//   https://www.morningstar.com/{assetType}/{exchange}/{symbol}/quote
+// Tried in order until a price is found; the working path is cached per symbol.
 const QStringList MorningstarProvider::kExchanges = {
-    "xnys",  // NYSE
-    "xnas",  // NASDAQ
-    "xase",  // AMEX
-    "arcx",  // NYSE Arca (ETFs)
+    "stocks/xnys",  // Stock — NYSE
+    "stocks/xnas",  // Stock — NASDAQ
+    "stocks/xase",  // Stock — AMEX
+    "stocks/arcx",  // Stock — NYSE Arca
+    "etfs/arcx",    // ETF  — NYSE Arca (most ETFs)
+    "etfs/xnas",    // ETF  — NASDAQ
+    "etfs/xnys",    // ETF  — NYSE
+    "funds/xnas",   // Mutual Fund
 };
 
 static const QByteArray kUserAgent =
@@ -103,7 +110,7 @@ void MorningstarProvider::startWarmup(const QString &pendingSymbol)
 void MorningstarProvider::fetchQuotePage(const QString &symbol, const QString &exchange)
 {
     // Morningstar URLs use lowercase ticker symbols.
-    const QUrl url(QString("https://www.morningstar.com/stocks/%1/%2/quote")
+    const QUrl url(QString("https://www.morningstar.com/%1/%2/quote")
                    .arg(exchange, symbol.toLower()));
 
     QNetworkReply *reply = m_manager->get(buildRequest(url));

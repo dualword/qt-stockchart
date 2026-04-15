@@ -16,15 +16,37 @@
 #include <limits>
 #include <cmath>
 
-static QIcon makeColorIcon(const QColor &color)
+static QIcon makeColorIcon(const QColor &color, bool thick = false)
 {
     QPixmap pm(14, 14);
     pm.fill(Qt::transparent);
     QPainter p(&pm);
     p.setRenderHint(QPainter::Antialiasing);
     p.setBrush(color);
-    p.setPen(Qt::NoPen);
+    p.setPen(thick ? QPen(Qt::white, 1.5) : Qt::NoPen);
     p.drawRoundedRect(1, 1, 12, 12, 2, 2);
+    return QIcon(pm);
+}
+
+// Eye icon: open (visible) = filled colored eye shape; closed = gray with slash.
+static QIcon makeEyeIcon(bool visible)
+{
+    QPixmap pm(14, 14);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    if (visible) {
+        // Filled green circle = visible
+        p.setBrush(QColor(40, 160, 40));
+        p.setPen(Qt::NoPen);
+        p.drawEllipse(2, 2, 10, 10);
+    } else {
+        // Hollow gray circle with diagonal slash = hidden
+        p.setBrush(Qt::NoBrush);
+        p.setPen(QPen(QColor(160, 160, 160), 1.5));
+        p.drawEllipse(2, 2, 10, 10);
+        p.drawLine(4, 10, 10, 4);
+    }
     return QIcon(pm);
 }
 
@@ -245,9 +267,12 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
     const int   nCols    = nPeriods + (hasClick ? 1 : 0);  // period + click columns
     const int   nRows    = syms.size();
 
-    // Column 0 is the color swatch; period/click columns start at index 1; last col = Purchase.
+    // Col 0: color swatch (thick toggle).
+    // Col 1: eye icon (visibility toggle).
+    // Col 2..nCols+1: period/click data.
+    // Col nCols+2: Purchase.
     m_table->setRowCount(nRows);
-    m_table->setColumnCount(nCols + 2);
+    m_table->setColumnCount(nCols + 3);
 
     // Find the period column (0-based period index) matching the active graph range.
     int activeOffset = 0;  // fallback to first period
@@ -262,8 +287,9 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
         return c < nPeriods ? today.addDays(m_periods[c]) : m_clickedDate;
     };
 
-    // Color-swatch column header (narrow, no label)
-    m_table->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
+    // Column headers
+    m_table->setHorizontalHeaderItem(0, new QTableWidgetItem(""));  // color swatch
+    m_table->setHorizontalHeaderItem(1, new QTableWidgetItem(""));  // eye
 
     // Purchase column header: bold when in purPct mode (it's the reference)
     {
@@ -273,10 +299,10 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
             f.setBold(true);
             purchaseHdr->setFont(f);
         }
-        m_table->setHorizontalHeaderItem(nCols + 1, purchaseHdr);
+        m_table->setHorizontalHeaderItem(nCols + 2, purchaseHdr);
     }
 
-    // Period column headers (table col = c + 1)
+    // Period column headers (table col = c + 2)
     // In purPct mode, no period column is the "active" reference — Purchase column is
     for (int c = 0; c < nPeriods; ++c) {
         const int days = m_periods[c];
@@ -290,11 +316,11 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
             if (m_showPercentChange)
                 hdr->setBackground(refBg);
         }
-        m_table->setHorizontalHeaderItem(c + 1, hdr);
+        m_table->setHorizontalHeaderItem(c + 2, hdr);
     }
     if (hasClick) {
         auto *hdr = new QTableWidgetItem(m_clickedDate.toString("MMM d"));
-        m_table->setHorizontalHeaderItem(nPeriods + 1, hdr);
+        m_table->setHorizontalHeaderItem(nPeriods + 2, hdr);
     }
 
     m_table->horizontalHeader()->setCursor(Qt::ArrowCursor);
@@ -303,12 +329,20 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
         const QString &sym = syms[r];
         m_table->setVerticalHeaderItem(r, new QTableWidgetItem(sym));
 
-        // Column 0: series color swatch
+        // Column 0: color swatch — white border when this symbol's line is thick
         auto *colorCell = new QTableWidgetItem();
         colorCell->setFlags(Qt::ItemIsEnabled);
+        colorCell->setToolTip("Click to highlight line");
         if (m_seriesColors.contains(sym))
-            colorCell->setIcon(makeColorIcon(m_seriesColors[sym]));
+            colorCell->setIcon(makeColorIcon(m_seriesColors[sym], sym == m_thickSymbol));
         m_table->setItem(r, 0, colorCell);
+
+        // Column 1: eye icon — green filled = visible, gray hollow = hidden
+        auto *eyeCell = new QTableWidgetItem();
+        eyeCell->setFlags(Qt::ItemIsEnabled);
+        eyeCell->setToolTip("Click to show/hide line");
+        eyeCell->setIcon(makeEyeIcon(!m_hiddenSymbols.contains(sym)));
+        m_table->setItem(r, 1, eyeCell);
 
         const bool hasCached = m_cache->cache().contains(sym) && !m_cache->cache()[sym].isEmpty();
 
@@ -322,9 +356,9 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
             }
         }
 
-        // Period + click columns (loop index c → table column c + 1)
+        // Period + click columns (loop index c → table column c + 2)
         for (int c = 0; c < nCols; ++c) {
-            const int tableCol   = c + 1;
+            const int tableCol   = c + 2;
             // In purPct mode the purchase column is the reference; no period col is "active"
             const bool isActive  = (c == activeOffset) && (c < nPeriods) && !m_purPctMode;
             QTableWidgetItem *cell;
@@ -372,6 +406,6 @@ void TableManager::refresh(const QStringList &syms, const QDate &clickedDate)
         purCell->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
         if (m_purPctMode && m_showPercentChange)
             purCell->setBackground(refBg);
-        m_table->setItem(r, nCols + 1, purCell);
+        m_table->setItem(r, nCols + 2, purCell);
     }
 }

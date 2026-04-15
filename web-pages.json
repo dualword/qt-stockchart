@@ -4,7 +4,8 @@
   "tabs": [
     {
       "name": "Morningstar",
-      "url": "https://www.morningstar.com/search?query={upper}",
+      "url1": "https://www.morningstar.com/search?query={lower}",
+      "url": "https://www.morningstar.com/stocks/xnys/{upper}/quote"
       "comment": "Search Morningstar for quotes, ratings, and analyst research.\n(A direct quote URL requires the exchange code, so search is used instead.)",
       "enabled": true
     },

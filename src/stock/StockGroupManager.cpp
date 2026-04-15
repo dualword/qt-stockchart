@@ -159,10 +159,16 @@ void StockGroupManager::addStockToGroup(QTreeWidgetItem *groupItem, const QStrin
     item->setData(1, StarRole, star);
     item->setIcon(1, makeStarIcon(star));
 
+    // if (m_symbolErrors.contains(symbol))
+    //     item->setIcon(2, makeErrorIcon());
+    // else if (m_cache->symbolTypes().contains(symbol))
+    //     item->setIcon(2, makeTypeIcon(m_cache->symbolTypes()[symbol]));
+
     if (m_symbolErrors.contains(symbol))
-        item->setIcon(2, makeErrorIcon());
-    else if (m_cache->symbolTypes().contains(symbol))
+        item->setBackground(2, Qt::red);
+    if (m_cache->symbolTypes().contains(symbol))
         item->setIcon(2, makeTypeIcon(m_cache->symbolTypes()[symbol]));
+
 
     item->setText(3, symbol);
     item->setText(4, m_cache->ageString(symbol));
@@ -572,9 +578,9 @@ void StockGroupManager::saveGroups()
 void StockGroupManager::updateTreeItemIcon(const QString &symbol)
 {
     QIcon icon;
-    if (m_symbolErrors.contains(symbol))
-        icon = makeErrorIcon();
-    else if (m_cache->symbolTypes().contains(symbol))
+    bool isErr = m_symbolErrors.contains(symbol);
+
+    if (m_cache->symbolTypes().contains(symbol))
         icon = makeTypeIcon(m_cache->symbolTypes()[symbol]);
 
     for (int i = 0; i < m_tree->topLevelItemCount(); ++i) {
@@ -582,7 +588,13 @@ void StockGroupManager::updateTreeItemIcon(const QString &symbol)
         for (int j = 0; j < group->childCount(); ++j) {
             QTreeWidgetItem *child = group->child(j);
             if (child->text(3) == symbol) {
+
+                if (isErr)
+                    child->setBackground(2, Qt::red);
+                else
+                    child->setData(2, Qt::BackgroundRole, QVariant());
                 child->setIcon(2, icon);
+
                 child->setText(4, m_cache->ageString(symbol));
                 if (m_cache->cache().contains(symbol) && !m_cache->cache()[symbol].isEmpty())
                     child->setText(5, QString("$%1").arg(m_cache->cache()[symbol].last().price, 0, 'f', 2));

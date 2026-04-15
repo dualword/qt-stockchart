@@ -323,8 +323,49 @@ void ChartManager::updateChart(const QStringList &selectedSymbols)
     m_chart->legend()->setVisible(true);
     updateCrosshair();
     updateZeroLine();
+    applyInteractions();
 
     isUpdating = false;
+}
+
+// ── Series interaction (thick / hidden) ───────────────────────────────────────
+
+void ChartManager::applyInteractions()
+{
+    for (QAbstractSeries *s : m_chart->series()) {
+        // Visibility: hidden symbols are fully invisible.
+        // In single-stock mode the one symbol owns every series in the chart.
+        const bool hidden = m_hiddenSymbols.contains(
+            m_singleStock ? m_singleStockSymbol : s->name());
+        s->setVisible(!hidden);
+
+        // Thickness: only applies to QLineSeries (not QAreaSeries fills).
+        if (auto *ls = qobject_cast<QLineSeries *>(s)) {
+            const bool thick = !m_thickSymbol.isEmpty() &&
+                               (m_singleStock
+                                    ? m_singleStockSymbol == m_thickSymbol
+                                    : s->name()           == m_thickSymbol);
+            QPen p = ls->pen();
+            p.setWidthF(thick ? 3.0 : 1.5);
+            ls->setPen(p);
+        }
+    }
+}
+
+void ChartManager::setThickSymbol(const QString &sym)
+{
+    // Toggle: same symbol clicked again → clear; different symbol → set.
+    m_thickSymbol = (m_thickSymbol == sym) ? QString() : sym;
+    applyInteractions();
+}
+
+void ChartManager::toggleHiddenSymbol(const QString &sym)
+{
+    if (m_hiddenSymbols.contains(sym))
+        m_hiddenSymbols.remove(sym);
+    else
+        m_hiddenSymbols.insert(sym);
+    applyInteractions();
 }
 
 // ── Crosshair & click ─────────────────────────────────────────────────────────

@@ -9,6 +9,8 @@
 #include "FmpProvider.h"
 #include "YahooPageProvider.h"
 #include "MorningstarProvider.h"
+#include "MorningstarWebProvider.h"
+#include "GoogleFinanceWebProvider.h"
 #include "Logger.h"
 #include "AppSettings.h"
 #include <QVBoxLayout>
@@ -66,7 +68,9 @@ MainWindow::MainWindow(QWidget *parent)
         new YahooFinanceProvider(this),
         new FmpProvider(this),
         new YahooPageProvider(this),
-        new MorningstarProvider(this)
+        new MorningstarProvider(this),
+        new MorningstarWebProvider(this),
+        new GoogleFinanceWebProvider(this)
     };
 
     m_providers = ProviderRegistry::instance().validate(m_providers);
@@ -78,6 +82,13 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     m_cacheManager = new StockCacheManager();
+
+    for (StockDataProvider *p : m_providers) {
+        if (auto *mwp = qobject_cast<MorningstarWebProvider *>(p))
+            mwp->setSymbolTypes(&m_cacheManager->symbolTypes());
+        else if (auto *gfw = qobject_cast<GoogleFinanceWebProvider *>(p))
+            gfw->setSymbolTypes(&m_cacheManager->symbolTypes());
+    }
 
     setupUI(); // creates widgets; helper managers allocated below after widgets exist
     setupMenu();
@@ -497,6 +508,12 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
     stockTable->setMinimumHeight(0);
     tablePanelLayout->addWidget(stockTable, 1);
 
+    // Col 0 (color swatch) and col 1 (eye) are fixed-width icon columns.
+    stockTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+    stockTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
+    stockTable->setColumnWidth(0, 22);
+    stockTable->setColumnWidth(1, 22);
+
     vertSplitter->addWidget(m_contentStack);
     vertSplitter->addWidget(tablePanel);
 
@@ -582,6 +599,23 @@ void MainWindow::setupRightPanel(QWidget *parent, QBoxLayout *layout)
             this, &MainWindow::rebuildPeriodButtons);
     connect(tableToggleBtn, &QToolButton::clicked, m_tableManager, &TableManager::onToggle);
     connect(displayModeBtn, &QPushButton::toggled, m_tableManager, &TableManager::onToggleDisplayMode);
+
+    // Col 0: toggle thick (one at a time).  Col 1: toggle visibility (multiple).
+    connect(stockTable, &QTableWidget::cellClicked, this, [this](int row, int col) {
+        if (col > 1) return;
+        auto *vhdr = m_tableManager->tableWidget()->verticalHeaderItem(row);
+        if (!vhdr) return;
+        const QString sym = vhdr->text();
+        if (col == 0) {
+            m_chartManager->setThickSymbol(sym);
+        } else {
+            m_chartManager->toggleHiddenSymbol(sym);
+        }
+        m_tableManager->setThickSymbol(m_chartManager->thickSymbol());
+        m_tableManager->setHiddenSymbols(m_chartManager->hiddenSymbols());
+        m_tableManager->refresh(m_groupManager->selectedSymbols(),
+                                m_chartManager->clickedDate());
+    });
 
     connect(m_purPctBtn, &QToolButton::toggled, this, [this](bool checked) {
         m_chartManager->setPurPctMode(checked);

@@ -70,5 +70,23 @@
     "url":           "https://www.morningstar.com/stocks",
     "accountUrl":    "",
     "quote_from_id": "morningstar"
+  },
+  {
+    "id":            "morningstarweb",
+    "label":         "Morningstar Web",
+    "comment":       "QWebEngine loader — no key required. Returns current price only. Runs real Chromium to pass Cloudflare JS challenges. Slower but more reliable than the plain scraper.",
+    "enable":        true,
+    "url":           "https://www.morningstar.com/stocks",
+    "accountUrl":    "",
+    "quote_from_id": "morningstarweb"
+  },
+  {
+    "id":            "googlefinanceweb",
+    "label":         "Google Finance",
+    "comment":       "QWebEngine loader — no key required. Returns current price only. Extracts data-last-price from Google Finance pages. Auto-detects exchange per asset type.",
+    "enable":        true,
+    "url":           "https://www.google.com/finance",
+    "accountUrl":    "",
+    "quote_from_id": "googlefinanceweb"
   }
 ]

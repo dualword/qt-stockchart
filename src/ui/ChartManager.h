@@ -13,6 +13,7 @@
 #include <QGraphicsTextItem>
 #include <QMap>
 #include <QPixmap>
+#include <QSet>
 #include "StockCacheManager.h"
 
 // Manages chart rendering, crosshair, zero line, background image, and chart range.
@@ -48,6 +49,15 @@ public:
     // Series colors keyed by symbol (populated after updateChart)
     const QMap<QString, QColor> &seriesColors() const { return m_seriesColors; }
 
+    // Interactive highlight: thicken one symbol's line (empty = none).
+    // Toggle: calling with the already-thick symbol clears it.
+    void setThickSymbol(const QString &sym);
+    const QString &thickSymbol() const { return m_thickSymbol; }
+
+    // Interactive visibility: toggle one symbol on/off; multiple can be hidden.
+    void toggleHiddenSymbol(const QString &sym);
+    const QSet<QString> &hiddenSymbols() const { return m_hiddenSymbols; }
+
     // Purchase overlay: set before calling updateChart to draw price line + date dot
     struct PurchaseInfo { double price = 0.0; QDate date; };
     void setPurchaseInfo(const QMap<QString, PurchaseInfo> &info) { m_purchaseInfo = info; }
@@ -60,6 +70,7 @@ signals:
 
 private:
     void onChartClicked(const QPointF &chartPos);
+    void applyInteractions(); // apply m_thickSymbol / m_hiddenSymbols to live series
     void updateZeroLine();
     void updateMinMaxLines();
     void updatePurchaseOverlay();
@@ -83,6 +94,8 @@ private:
     int    m_chartRangeDays    = 0;
     bool   m_crosshairUpdating = false;
     QMap<QString, QColor> m_seriesColors;
+    QString       m_thickSymbol;    // symbol whose line is currently thick (empty = none)
+    QSet<QString> m_hiddenSymbols;  // symbols whose lines are hidden
     qint64 m_clickedMsecs   = -1;
     QDate  m_clickedDate;
 
